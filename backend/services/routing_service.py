@@ -1,14 +1,17 @@
 import json
-import math
 import logging
-import urllib.request
-import urllib.error
+import math
 import time
+import urllib.error
+import urllib.request
+from typing import Any
+
+from core.cache import RouteCacheManager, build_route_cache_key
 from domain.interfaces.routing import IRoutingService
 from domain.value_objects.coordinates import Coordinates
-from core.cache import RouteCacheManager, build_route_cache_key
 
 logger = logging.getLogger("services.routing")
+
 
 class GeospatialRoutingService(IRoutingService):
     """
@@ -16,6 +19,7 @@ class GeospatialRoutingService(IRoutingService):
     for Heavy Goods Vehicles (HGV / Driving-Truck). Includes Redis route caching,
     exponential backoff retries, GeoJSON response mapping, and Haversine network fallback.
     """
+
     METERS_TO_MILES = 0.000621371
     DEFAULT_AVG_TRUCK_SPEED_MPH = 55.0
 
@@ -37,7 +41,7 @@ class GeospatialRoutingService(IRoutingService):
         origin: Coordinates,
         waypoints: list[Coordinates],
         destination: Coordinates,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Calculates optimal HGV driving route between origin, optional intermediate waypoints, and destination.
         Checks Redis cache first. On miss, calls ORS API or Haversine fallback and populates cache.
@@ -45,12 +49,10 @@ class GeospatialRoutingService(IRoutingService):
         all_coords = [origin] + waypoints + [destination]
         cache_key = build_route_cache_key(all_coords)
 
-        # 1. Check Redis Cache HIT
         cached_route = self.cache_manager.get(cache_key)
         if cached_route:
             return cached_route
 
-        # 2. Cache MISS -> Fetch from ORS or Fallback
         if self.api_key:
             try:
                 route_res = self._fetch_openrouteservice(all_coords)
@@ -65,10 +67,8 @@ class GeospatialRoutingService(IRoutingService):
         self.cache_manager.set(cache_key, route_res)
         return route_res
 
-    def _fetch_openrouteservice(self, coordinates: list[Coordinates]) -> dict:
-        """
-        Calls ORS POST /v2/directions/driving-hgv API.
-        """
+    def _fetch_openrouteservice(self, coordinates: list[Coordinates]) -> dict[str, Any]:
+        """Calls ORS POST /v2/directions/driving-hgv API."""
         url = f"{self.base_url}/v2/directions/driving-hgv/geojson"
         headers = {
             "Content-Type": "application/json",
@@ -94,22 +94,22 @@ class GeospatialRoutingService(IRoutingService):
             except urllib.error.HTTPError as http_err:
                 last_exception = http_err
                 if http_err.code in (429, 500, 502, 503, 504):
-                    sleep_time = self.backoff_factor * (2 ** attempt)
-                    logger.info(f"Retrying ORS API call in {sleep_time:.2f}s (Attempt {attempt + 1}/{self.max_retries})")
+                    sleep_time = self.backoff_factor * (2**attempt)
+                    logger.info(
+                        f"Retrying ORS API call in {sleep_time:.2f}s (Attempt {attempt + 1}/{self.max_retries})"
+                    )
                     time.sleep(sleep_time)
                 else:
                     break
             except urllib.error.URLError as url_err:
                 last_exception = url_err
-                sleep_time = self.backoff_factor * (2 ** attempt)
+                sleep_time = self.backoff_factor * (2**attempt)
                 time.sleep(sleep_time)
 
         raise RuntimeError(f"ORS API request failed after {self.max_retries} attempts: {last_exception}")
 
-    def _parse_ors_response(self, response_body: dict) -> dict:
-        """
-        Maps ORS GeoJSON response structure into standard route dictionary format.
-        """
+    def _parse_ors_response(self, response_body: dict[str, Any]) -> dict[str, Any]:
+        """Maps ORS GeoJSON response structure into standard route dictionary format."""
         features = response_body.get("features", [])
         if not features:
             raise ValueError("Invalid ORS response: Missing features array.")
@@ -128,7 +128,7 @@ class GeospatialRoutingService(IRoutingService):
             "duration_seconds": int(duration_seconds),
         }
 
-    def _calculate_haversine_fallback(self, coordinates: list[Coordinates]) -> dict:
+    def _calculate_haversine_fallback(self, coordinates: list[Coordinates]) -> dict[str, Any]:
         """
         Mathematical fallback calculating route metrics using Haversine distance
         multiplied by a 1.25x road circuity factor for truck highway routing.
@@ -155,10 +155,8 @@ class GeospatialRoutingService(IRoutingService):
 
     @staticmethod
     def _haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """
-        Calculates Great Circle distance between two coordinates in miles.
-        """
-        R = 3958.8  # Earth radius in miles
+        """Calculates Great Circle distance between two coordinates in miles."""
+        r = 3958.8  # Earth radius in miles
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
         a = (
@@ -166,4 +164,4 @@ class GeospatialRoutingService(IRoutingService):
             + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
         )
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        return R * c
+        return r * c

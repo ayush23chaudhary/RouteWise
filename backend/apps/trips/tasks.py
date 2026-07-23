@@ -1,22 +1,22 @@
 import logging
 import uuid
-from typing import Dict, Any
+from typing import Any
+
 from config.celery import app
 
 logger = logging.getLogger("apps.trips.tasks")
 
+
 @app.task(name="trips.generate_trip_schedule_async")
-def generate_trip_schedule_async(trip_id_str: str) -> Dict[str, Any]:
-    """
-    Asynchronous Celery task for long-running trip schedule calculations.
-    """
+def generate_trip_schedule_async(trip_id_str: str) -> dict[str, Any]:
+    """Asynchronous Celery task for long-running trip schedule calculations."""
     logger.info(f"Starting asynchronous schedule generation for trip {trip_id_str}")
     try:
         from repositories.trip_repository import get_django_trip_repository
         from services.scheduling_service import HOSSchedulingService
 
-        TripRepo = get_django_trip_repository()
-        repo = TripRepo()
+        trip_repo_cls = get_django_trip_repository()
+        repo = trip_repo_cls()
         trip_id = uuid.UUID(trip_id_str)
 
         domain_trip = repo.get_by_id(trip_id)
@@ -36,17 +36,15 @@ def generate_trip_schedule_async(trip_id_str: str) -> Dict[str, Any]:
 
 
 @app.task(name="trips.audit_trip_compliance_async")
-def audit_trip_compliance_async(trip_id_str: str) -> Dict[str, Any]:
-    """
-    Asynchronous Celery task for compliance audit validation reports.
-    """
+def audit_trip_compliance_async(trip_id_str: str) -> dict[str, Any]:
+    """Asynchronous Celery task for compliance audit validation reports."""
     logger.info(f"Starting asynchronous compliance audit for trip {trip_id_str}")
     try:
         from repositories.trip_repository import get_django_trip_repository
         from services.validation_service import ComplianceValidationService
 
-        TripRepo = get_django_trip_repository()
-        repo = TripRepo()
+        trip_repo_cls = get_django_trip_repository()
+        repo = trip_repo_cls()
         trip_id = uuid.UUID(trip_id_str)
 
         domain_trip = repo.get_by_id(trip_id)
