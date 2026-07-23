@@ -1,0 +1,65 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: spotter_test_db
+          POSTGRES_USER: spotter_user
+          POSTGRES_PASSWORD: spotter_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black mypy pytest pytest-django pytest-cov django djangorestframework psycopg[binary] redis celery structlog django-cors-headers openrouteservice
+
+      - name: Code Linting (Ruff)
+        run: ruff check .
+
+      - name: Code Formatting (Black)
+        run: black --check .
+
+      - name: Type Checking (Mypy)
+        run: mypy backend || true
+
+      - name: Run Tests
+        env:
+          POSTGRES_DB: spotter_test_db
+          POSTGRES_USER: spotter_user
+          POSTGRES_PASSWORD: spotter_password
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci-test-secret-key
+        run: |
+          pytest backend/tests
