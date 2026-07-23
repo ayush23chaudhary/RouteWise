@@ -1,14 +1,19 @@
 from django.urls import path
+
+from apps.api.v1.views.health import HealthCheckView, LivenessCheckView, ReadinessCheckView
 from apps.api.v1.views.trip import (
-    TripPlanView,
-    TripDetailView,
-    TripTimelineView,
-    TripLogsView,
     TripComplianceView,
+    TripDetailView,
+    TripLogsView,
+    TripPlanView,
     TripStatusUpdateView,
+    TripTimelineView,
 )
 
 urlpatterns = [
+    path("health", HealthCheckView.as_view(), name="health"),
+    path("readiness", ReadinessCheckView.as_view(), name="readiness"),
+    path("liveness", LivenessCheckView.as_view(), name="liveness"),
     path("trips/plan", TripPlanView.as_view(), name="trip-plan"),
     path("trips/<uuid:trip_id>", TripDetailView.as_view(), name="trip-detail"),
     path("trips/<uuid:trip_id>/timeline", TripTimelineView.as_view(), name="trip-timeline"),
