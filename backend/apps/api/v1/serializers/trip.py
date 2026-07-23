@@ -13,6 +13,9 @@ class TripPlanRequestSerializer(serializers.Serializer):
     cycle_type = serializers.ChoiceField(choices=["70h_8d"], default="70h_8d")
     initial_hours_used = serializers.FloatField(min_value=0.0, max_value=70.0, default=0.0)
 
+class TripStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"])
+
 class WaypointResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     sequence = serializers.IntegerField()
@@ -40,6 +43,11 @@ class DailyLogResponseSerializer(serializers.Serializer):
     driving_seconds = serializers.IntegerField()
     on_duty_seconds = serializers.IntegerField()
     grid_intervals = serializers.ListField(child=serializers.CharField())
+
+class ComplianceReportResponseSerializer(serializers.Serializer):
+    is_compliant = serializers.BooleanField()
+    violations = serializers.ListField(child=serializers.CharField())
+    warnings = serializers.ListField(child=serializers.CharField())
 
 class TripPlanResponseSerializer(serializers.Serializer):
     trip_id = serializers.UUIDField(source="id")
