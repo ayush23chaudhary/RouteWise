@@ -1,7 +1,7 @@
 import hashlib
 import json
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from domain.value_objects.coordinates import Coordinates
 
 logger = logging.getLogger("core.cache")
@@ -33,7 +33,6 @@ class RouteCacheManager:
                 logger.info(f"Cache HIT (Django/Redis) for key: {cache_key}")
                 return json.loads(cached_val) if isinstance(cached_val, str) else cached_val
         except Exception:
-            # Fallback to process in-memory store
             if cache_key in self._in_memory_store:
                 logger.info(f"Cache HIT (In-Memory) for key: {cache_key}")
                 return self._in_memory_store[cache_key]

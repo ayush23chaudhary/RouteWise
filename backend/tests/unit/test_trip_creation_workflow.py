@@ -59,7 +59,7 @@ class TestTripCreationWorkflow(unittest.TestCase):
             self.trip_service.plan_trip(
                 driver_id=driver_id,
                 start_time=start_time,
-                origin_coords=(99.0, -122.4194),  # Invalid latitude 99.0
+                origin_coords=(99.0, -122.4194),
                 pickup_coords=(34.0522, -118.2437),
                 dropoff_coords=(40.7128, -74.0060),
             )
@@ -75,7 +75,7 @@ class TestTripCreationWorkflow(unittest.TestCase):
                 origin_coords=(37.7749, -122.4194),
                 pickup_coords=(34.0522, -118.2437),
                 dropoff_coords=(40.7128, -74.0060),
-                initial_cycle_used_seconds=-500,  # Invalid negative cycle seconds
+                initial_cycle_used_seconds=-500,
             )
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ from domain.entities.trip import Trip
 from domain.entities.waypoint import Waypoint
 from domain.entities.schedule_event import ScheduleEvent
 from domain.value_objects.coordinates import Coordinates
-from domain.value_objects.driver_hos_state import DriverHOSState
 from domain.services.validation_engine import ComplianceValidationEngine
 from domain.services.hos_engine import HOSSchedulingEngine
 

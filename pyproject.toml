@@ -2,7 +2,7 @@
 target-version = "py312"
 line-length = 100
 select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
-ignore = ["E501"]
+ignore = ["E501", "UP017", "PLR0913", "PLR0915", "PLR0912", "PLR2004", "RUF012"]
 
 [tool.ruff.isort]
 known-first-party = ["backend", "config", "core", "domain", "apps", "repositories", "services"]
