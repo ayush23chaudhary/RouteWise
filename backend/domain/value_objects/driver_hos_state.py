@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 @dataclass(frozen=True)
 class DriverHOSState:
@@ -10,7 +11,7 @@ class DriverHOSState:
     duty_seconds_used: int = 0
     cycle_seconds_used: int = 0
     cycle_type: str = "70h_8d"
-    last_reset_timestamp: datetime | None = None
+    last_reset_timestamp: Optional[datetime] = None
 
     def __post_init__(self) -> None:
         if self.driving_seconds_used < 0 or self.driving_seconds_used > 39600:
