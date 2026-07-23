@@ -1,12 +1,13 @@
 from domain.interfaces.scheduler import ISchedulingEngine
 from domain.entities.trip import Trip
+from domain.services.hos_engine import HOSSchedulingEngine
 
 class HOSSchedulingService(ISchedulingEngine):
     """
-    Service wrapper for the HOS Scheduling Engine.
-    Extensible stub ready for plugging in Phase 2 algorithmic scheduling.
+    Application Service wrapper delegating schedule calculations to the pure domain HOSSchedulingEngine.
     """
+    def __init__(self) -> None:
+        self.engine = HOSSchedulingEngine()
+
     def generate_schedule(self, trip: Trip) -> Trip:
-        # Stub foundation: transition trip status and return aggregate
-        trip.mark_planned()
-        return trip
+        return self.engine.generate_schedule(trip)
