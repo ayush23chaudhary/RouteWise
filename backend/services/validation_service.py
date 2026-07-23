@@ -1,11 +1,14 @@
 from domain.interfaces.validator import IValidationEngine
 from domain.entities.trip import Trip
 from domain.value_objects.validation_result import ValidationResult
+from domain.services.validation_engine import ComplianceValidationEngine
 
 class ComplianceValidationService(IValidationEngine):
     """
-    Independent Service wrapper evaluating regulatory compliance of trip timelines.
+    Application Service wrapper delegating compliance validation to ComplianceValidationEngine.
     """
+    def __init__(self) -> None:
+        self.engine = ComplianceValidationEngine()
+
     def validate_trip(self, trip: Trip) -> ValidationResult:
-        # Stub foundation: returns compliant validation result
-        return ValidationResult(is_compliant=True, violations=[], warnings=[])
+        return self.engine.validate_trip(trip)
