@@ -20,6 +20,7 @@ class Trip(TimeStampedModel):
     total_distance_miles = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     total_duration_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     initial_cycle_used_seconds = models.IntegerField(default=0)
+    compliance_report = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = "trips"
