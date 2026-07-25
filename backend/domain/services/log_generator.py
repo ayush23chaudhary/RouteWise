@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime, date, time, timedelta, timezone
-from typing import List, Dict
-from domain.entities.schedule_event import ScheduleEvent
+from datetime import date, datetime, time, timedelta, timezone
+
 from domain.entities.daily_log import DailyLog
+from domain.entities.schedule_event import ScheduleEvent
+
 
 class ELDLogGenerator:
     """
@@ -11,7 +12,7 @@ class ELDLogGenerator:
     calculates daily totals for OFF, SB, D, and ON duty statuses, and generates 96-point 
     15-minute grid status arrays per 24-hour log page.
     """
-    def generate_daily_logs(self, events: List[ScheduleEvent]) -> List[DailyLog]:
+    def generate_daily_logs(self, events: list[ScheduleEvent]) -> list[DailyLog]:
         """
         Transforms a continuous list of ScheduleEvents into an ordered list of DailyLog domain objects.
         """
@@ -22,7 +23,7 @@ class ELDLogGenerator:
         split_events = self._split_events_by_midnight(events)
 
         # 2. Group split events by calendar date
-        daily_event_groups: Dict[date, List[Dict]] = {}
+        daily_event_groups: dict[date, list[dict]] = {}
         for ev in split_events:
             d = ev["start_time"].date()
             if d not in daily_event_groups:
@@ -30,7 +31,7 @@ class ELDLogGenerator:
             daily_event_groups[d].append(ev)
 
         # 3. Build DailyLog aggregate per date
-        daily_logs: List[DailyLog] = []
+        daily_logs: list[DailyLog] = []
         sorted_dates = sorted(daily_event_groups.keys())
 
         for d in sorted_dates:
@@ -69,11 +70,11 @@ class ELDLogGenerator:
 
         return daily_logs
 
-    def _split_events_by_midnight(self, events: List[ScheduleEvent]) -> List[Dict]:
+    def _split_events_by_midnight(self, events: list[ScheduleEvent]) -> list[dict]:
         """
         Splits events overlapping midnight (00:00:00) into date-partitioned event fragments.
         """
-        split_list: List[Dict] = []
+        split_list: list[dict] = []
 
         for ev in events:
             curr_start = ev.start_time
@@ -108,7 +109,7 @@ class ELDLogGenerator:
 
         return split_list
 
-    def _generate_96_grid_intervals(self, log_date: date, day_events: List[Dict]) -> List[str]:
+    def _generate_96_grid_intervals(self, log_date: date, day_events: list[dict]) -> list[str]:
         """
         Generates 96 15-minute interval status strings (OFF, SB, D, ON) per 24-hour log page.
         """

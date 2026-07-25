@@ -2,11 +2,13 @@ import unittest
 
 try:
     import os
+
     import django
     if not os.environ.get("DJANGO_SETTINGS_MODULE"):
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
     django.setup()
     from rest_framework.test import APIRequestFactory
+
     from apps.api.v1.views.health import HealthCheckView, LivenessCheckView
     HAS_DRF = True
 except Exception:

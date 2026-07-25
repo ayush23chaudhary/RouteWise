@@ -1,8 +1,9 @@
 import unittest
-import uuid
 from datetime import datetime, timedelta, timezone
+
 from domain.services.timeline_engine import TimelineEngine
 from domain.value_objects.coordinates import Coordinates
+
 
 class TestTimelineEngine(unittest.TestCase):
     def setUp(self):

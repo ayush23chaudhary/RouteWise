@@ -1,6 +1,7 @@
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+
 class StandardResultsSetPagination(PageNumberPagination):
     """
     Standard pagination schema returning count, total_pages, and links.

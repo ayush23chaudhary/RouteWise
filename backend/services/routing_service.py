@@ -4,7 +4,7 @@ import math
 import time
 import urllib.error
 import urllib.request
-from typing import Any
+from typing import Any, Optional
 
 from core.cache import RouteCacheManager, build_route_cache_key
 from domain.interfaces.routing import IRoutingService
@@ -25,16 +25,23 @@ class GeospatialRoutingService(IRoutingService):
 
     def __init__(
         self,
-        api_key: str = "",
+        api_key: Optional[str] = None,
         base_url: str = "https://api.openrouteservice.org",
         max_retries: int = 3,
         backoff_factor: float = 0.5,
     ) -> None:
+        if api_key is None:
+            try:
+                from django.conf import settings
+                api_key = getattr(settings, "OPENROUTE_SERVICE_API_KEY", "")
+            except Exception:
+                api_key = ""
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.cache_manager = RouteCacheManager()
+
 
     def calculate_route(
         self,

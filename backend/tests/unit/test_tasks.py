@@ -1,6 +1,7 @@
 import unittest
 import uuid
-from apps.trips.tasks import generate_trip_schedule_async, audit_trip_compliance_async
+
+from apps.trips.tasks import audit_trip_compliance_async, generate_trip_schedule_async
 
 try:
     import django
@@ -8,6 +9,10 @@ try:
 except ImportError:
     HAS_DJANGO = False
 
+import pytest
+
+
+@pytest.mark.django_db
 @unittest.skipUnless(HAS_DJANGO, "Django not installed in local environment")
 class TestBackgroundTasks(unittest.TestCase):
     def test_async_schedule_generation_missing_trip(self):

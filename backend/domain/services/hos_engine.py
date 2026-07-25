@@ -1,11 +1,11 @@
-import uuid
-from datetime import datetime, timedelta, timezone
-from domain.interfaces.scheduler import ISchedulingEngine
+from datetime import timedelta, timezone
+
 from domain.entities.trip import Trip
-from domain.entities.schedule_event import ScheduleEvent
-from domain.value_objects.coordinates import Coordinates
-from domain.services.timeline_engine import TimelineEngine
+from domain.interfaces.scheduler import ISchedulingEngine
 from domain.services.log_generator import ELDLogGenerator
+from domain.services.timeline_engine import TimelineEngine
+from domain.value_objects.coordinates import Coordinates
+
 
 class HOSSchedulingEngine(ISchedulingEngine):
     """

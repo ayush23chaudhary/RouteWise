@@ -1,6 +1,8 @@
 import unittest
+
 from domain.value_objects.coordinates import Coordinates
 from services.routing_service import GeospatialRoutingService
+
 
 class TestRoutingService(unittest.TestCase):
     def test_haversine_fallback_calculation(self):

@@ -1,6 +1,8 @@
+from typing import Any
+
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
-from typing import Any
+
 
 class IsDispatcherOrManager(BasePermission):
     """

@@ -1,8 +1,10 @@
-import pytest
 import uuid
-from datetime import datetime, timezone
+
+import pytest
 from rest_framework.test import APIClient
+
 from apps.drivers.models import Driver
+
 
 @pytest.fixture
 def api_client():

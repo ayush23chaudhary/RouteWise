@@ -1,10 +1,12 @@
 import unittest
 import uuid
 from datetime import datetime, timezone
+
+from domain.entities.trip import Trip
+from domain.entities.waypoint import Waypoint
 from domain.value_objects.coordinates import Coordinates
 from domain.value_objects.driver_hos_state import DriverHOSState
-from domain.entities.waypoint import Waypoint
-from domain.entities.trip import Trip
+
 
 class TestDomainEntities(unittest.TestCase):
     def test_coordinates_valid(self):

@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from domain.value_objects.coordinates import Coordinates
+
 
 class IRoutingService(ABC):
     """

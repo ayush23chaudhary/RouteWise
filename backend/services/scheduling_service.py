@@ -1,6 +1,7 @@
-from domain.interfaces.scheduler import ISchedulingEngine
 from domain.entities.trip import Trip
+from domain.interfaces.scheduler import ISchedulingEngine
 from domain.services.hos_engine import HOSSchedulingEngine
+
 
 class HOSSchedulingService(ISchedulingEngine):
     """

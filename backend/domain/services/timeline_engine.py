@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Optional
+
 from domain.entities.schedule_event import ScheduleEvent
 from domain.value_objects.coordinates import Coordinates
+
 
 class TimelineEngine:
     """
@@ -10,13 +12,13 @@ class TimelineEngine:
     and ordinal event sequence indexing across a trip timeline.
     """
     def __init__(self, events: Optional[List[ScheduleEvent]] = None) -> None:
-        self._events: List[ScheduleEvent] = []
+        self._events: list[ScheduleEvent] = []
         if events:
             for ev in events:
                 self.append_event(ev)
 
     @property
-    def events(self) -> List[ScheduleEvent]:
+    def events(self) -> list[ScheduleEvent]:
         """Returns read-only copy of ordered timeline events."""
         return list(self._events)
 
@@ -75,7 +77,7 @@ class TimelineEngine:
         """Returns the most recent event on the timeline."""
         return self._events[-1] if self._events else None
 
-    def calculate_duty_totals(self) -> Dict[str, int]:
+    def calculate_duty_totals(self) -> dict[str, int]:
         """
         Calculates cumulative duration in seconds for each duty status (OFF, SB, D, ON).
         """

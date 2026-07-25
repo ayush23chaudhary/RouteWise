@@ -1,10 +1,12 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-import uuid
-from domain.entities.waypoint import Waypoint
-from domain.entities.schedule_event import ScheduleEvent
+
 from domain.entities.daily_log import DailyLog
+from domain.entities.schedule_event import ScheduleEvent
+from domain.entities.waypoint import Waypoint
 from domain.value_objects.driver_hos_state import DriverHOSState
+
 
 @dataclass
 class Trip:
@@ -22,6 +24,7 @@ class Trip:
     initial_hos_state: DriverHOSState = field(default_factory=DriverHOSState)
     total_distance_miles: float = 0.0
     total_duration_hours: float = 0.0
+    route_geometry: list[list[float]] = field(default_factory=list)
 
     def add_waypoint(self, waypoint: Waypoint) -> None:
         self.waypoints.append(waypoint)

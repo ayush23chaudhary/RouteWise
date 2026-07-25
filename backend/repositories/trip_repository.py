@@ -1,10 +1,12 @@
 import uuid
-from typing import Dict, Optional, List
+from typing import Optional
+
+from domain.entities.daily_log import DailyLog as DomainDailyLog
+from domain.entities.schedule_event import ScheduleEvent as DomainScheduleEvent
 from domain.entities.trip import Trip as DomainTrip
 from domain.entities.waypoint import Waypoint as DomainWaypoint
-from domain.entities.schedule_event import ScheduleEvent as DomainScheduleEvent
-from domain.entities.daily_log import DailyLog as DomainDailyLog
 from domain.value_objects.coordinates import Coordinates
+
 
 class ITripRepository:
     """
@@ -22,7 +24,7 @@ class InMemoryTripRepository(ITripRepository):
     In-memory implementation of ITripRepository for unit testing.
     """
     def __init__(self) -> None:
-        self._store: Dict[uuid.UUID, DomainTrip] = {}
+        self._store: dict[uuid.UUID, DomainTrip] = {}
 
     def get_by_id(self, trip_id: uuid.UUID) -> Optional[DomainTrip]:
         return self._store.get(trip_id)
@@ -34,11 +36,18 @@ class InMemoryTripRepository(ITripRepository):
 
 def get_django_trip_repository():
     from django.db import transaction
+
+    from apps.trips.models import (
+        DailyLog as DailyLogORM,
+    )
+    from apps.trips.models import (
+        ScheduleEvent as ScheduleEventORM,
+    )
     from apps.trips.models import (
         Trip as TripORM,
+    )
+    from apps.trips.models import (
         Waypoint as WaypointORM,
-        ScheduleEvent as ScheduleEventORM,
-        DailyLog as DailyLogORM,
     )
 
     class TripRepository(ITripRepository):

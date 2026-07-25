@@ -1,7 +1,8 @@
-import uuid
-import time
 import logging
-from typing import Callable
+import time
+import uuid
+from collections.abc import Callable
+
 from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger("api.requests")

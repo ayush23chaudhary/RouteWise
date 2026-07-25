@@ -3,7 +3,19 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Load environment variables from .env if present
+env_path = BASE_DIR.parent / ".env" if (BASE_DIR.parent / ".env").exists() else BASE_DIR / ".env"
+if env_path.exists():
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ.setdefault(key.strip(), val.strip())
+
+
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-default-key-change-in-production")
+
 
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "t")
 
@@ -41,6 +53,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+try:
+    import whitenoise  # noqa: F401
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+except ImportError:
+    pass
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -61,12 +79,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Database Configuration with Neon PostgreSQL & SQLite Fallback
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    try:
+        import dj_database_url
+
+        DATABASES = {
+            "default": dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                conn_health_checks=True,
+                ssl_require=True,
+            )
+        }
+    except ImportError:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

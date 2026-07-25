@@ -1,12 +1,14 @@
 import unittest
 import uuid
 from datetime import datetime, timezone
-from services.trip_service import TripService
+
+from repositories.driver_repository import InMemoryDriverRepository
+from repositories.trip_repository import InMemoryTripRepository
 from services.routing_service import GeospatialRoutingService
 from services.scheduling_service import HOSSchedulingService
+from services.trip_service import TripService
 from services.validation_service import ComplianceValidationService
-from repositories.trip_repository import InMemoryTripRepository
-from repositories.driver_repository import InMemoryDriverRepository
+
 
 class TestTripCreationWorkflow(unittest.TestCase):
     def setUp(self):

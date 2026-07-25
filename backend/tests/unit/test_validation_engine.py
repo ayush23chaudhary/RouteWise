@@ -1,12 +1,14 @@
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
+
+from domain.entities.schedule_event import ScheduleEvent
 from domain.entities.trip import Trip
 from domain.entities.waypoint import Waypoint
-from domain.entities.schedule_event import ScheduleEvent
-from domain.value_objects.coordinates import Coordinates
-from domain.services.validation_engine import ComplianceValidationEngine
 from domain.services.hos_engine import HOSSchedulingEngine
+from domain.services.validation_engine import ComplianceValidationEngine
+from domain.value_objects.coordinates import Coordinates
+
 
 class TestComplianceValidationEngine(unittest.TestCase):
     def setUp(self):

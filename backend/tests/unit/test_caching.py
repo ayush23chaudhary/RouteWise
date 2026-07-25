@@ -1,7 +1,9 @@
 import unittest
+
+from core.cache import build_route_cache_key
 from domain.value_objects.coordinates import Coordinates
-from core.cache import build_route_cache_key, RouteCacheManager
 from services.routing_service import GeospatialRoutingService
+
 
 class TestCachingLayer(unittest.TestCase):
     def test_route_cache_key_generation_deterministic(self):

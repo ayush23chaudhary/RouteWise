@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+
 from domain.entities.trip import Trip
 from domain.value_objects.validation_result import ValidationResult
+
 
 class IValidationEngine(ABC):
     """

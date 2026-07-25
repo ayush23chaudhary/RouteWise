@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+
 class LocationSerializer(serializers.Serializer):
     latitude = serializers.FloatField(min_value=-90.0, max_value=90.0)
     longitude = serializers.FloatField(min_value=-180.0, max_value=180.0)
@@ -53,6 +54,7 @@ class TripPlanResponseSerializer(serializers.Serializer):
     trip_id = serializers.UUIDField(source="id")
     status = serializers.CharField()
     metrics = serializers.SerializerMethodField()
+    route_geometry = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()), default=list)
     waypoints = WaypointResponseSerializer(many=True)
     events = ScheduleEventResponseSerializer(many=True)
     daily_logs = DailyLogResponseSerializer(many=True)

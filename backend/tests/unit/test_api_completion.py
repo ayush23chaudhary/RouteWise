@@ -1,17 +1,19 @@
 import unittest
 import uuid
+
 from domain.value_objects.validation_result import ValidationResult
 
 try:
     import os
+
     import django
     if not os.environ.get("DJANGO_SETTINGS_MODULE"):
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
     django.setup()
     from apps.api.v1.serializers.trip import (
+        ComplianceReportResponseSerializer,
         TripPlanRequestSerializer,
         TripStatusUpdateSerializer,
-        ComplianceReportResponseSerializer,
     )
     HAS_REST_FRAMEWORK = True
 except Exception:

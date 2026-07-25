@@ -1,12 +1,12 @@
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 
-def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+def custom_exception_handler(exc: Exception, context: dict[str, Any]) -> Optional[Response]:
     """RFC 7807 Problem Details compliant exception handler for REST APIs."""
     response = exception_handler(exc, context)
 

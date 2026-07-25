@@ -1,7 +1,8 @@
-from domain.interfaces.validator import IValidationEngine
 from domain.entities.trip import Trip
-from domain.value_objects.validation_result import ValidationResult
+from domain.interfaces.validator import IValidationEngine
 from domain.services.validation_engine import ComplianceValidationEngine
+from domain.value_objects.validation_result import ValidationResult
+
 
 class ComplianceValidationService(IValidationEngine):
     """

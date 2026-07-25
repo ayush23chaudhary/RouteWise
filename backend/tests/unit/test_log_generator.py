@@ -1,9 +1,11 @@
 import unittest
 import uuid
-from datetime import datetime, date, timezone
+from datetime import date, datetime, timezone
+
 from domain.entities.schedule_event import ScheduleEvent
-from domain.value_objects.coordinates import Coordinates
 from domain.services.log_generator import ELDLogGenerator
+from domain.value_objects.coordinates import Coordinates
+
 
 class TestELDLogGenerator(unittest.TestCase):
     def setUp(self):

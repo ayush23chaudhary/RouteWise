@@ -1,6 +1,7 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import date
-import uuid
+
 
 @dataclass
 class DailyLog:

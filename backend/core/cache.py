@@ -1,7 +1,8 @@
 import hashlib
 import json
 import logging
-from typing import Optional, Dict
+from typing import Optional
+
 from domain.value_objects.coordinates import Coordinates
 
 logger = logging.getLogger("core.cache")
@@ -22,7 +23,7 @@ class RouteCacheManager:
     Provides route geometry lookups with graceful fallback if Redis/Django is unavailable.
     """
     DEFAULT_TTL_SECONDS = 86400  # 24 Hours
-    _in_memory_store: Dict[str, dict] = {}
+    _in_memory_store: dict[str, dict] = {}
 
     def get(self, cache_key: str) -> Optional[dict]:
         """Attempts to read route result dictionary from cache."""

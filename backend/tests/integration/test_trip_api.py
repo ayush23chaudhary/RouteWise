@@ -1,6 +1,7 @@
 import pytest
 from rest_framework import status
 
+
 @pytest.mark.django_db
 def test_plan_trip_api_success(api_client, sample_trip_payload):
     response = api_client.post("/api/v1/trips/plan", sample_trip_payload, format="json")

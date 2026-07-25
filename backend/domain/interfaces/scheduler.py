@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from domain.entities.trip import Trip
+
 
 class ISchedulingEngine(ABC):
     """

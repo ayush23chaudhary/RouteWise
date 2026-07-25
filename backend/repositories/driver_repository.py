@@ -1,5 +1,6 @@
 import uuid
-from typing import Dict, Optional
+from typing import Optional
+
 
 class IDriverRepository:
     """
@@ -14,7 +15,7 @@ class InMemoryDriverRepository(IDriverRepository):
     In-memory implementation of IDriverRepository for unit tests.
     """
     def __init__(self) -> None:
-        self._store: Dict[uuid.UUID, object] = {}
+        self._store: dict[uuid.UUID, object] = {}
 
     def get_by_id(self, driver_id: uuid.UUID) -> Optional[object]:
         return self._store.get(driver_id)
