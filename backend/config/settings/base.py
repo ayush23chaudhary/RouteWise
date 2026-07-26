@@ -141,3 +141,9 @@ REST_FRAMEWORK = {
 # Geospatial Service Settings
 OPENROUTE_SERVICE_API_KEY = os.environ.get("OPENROUTE_SERVICE_API_KEY", "")
 OPENROUTE_SERVICE_BASE_URL = os.environ.get("OPENROUTE_SERVICE_BASE_URL", "https://api.openrouteservice.org")
+
+# CORS Custom Headers
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-correlation-id",
+]
