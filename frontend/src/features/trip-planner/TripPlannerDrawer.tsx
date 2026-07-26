@@ -445,6 +445,7 @@ export function TripPlannerDrawer() {
       try {
         return await planTrip(payload)
       } catch (err) {
+        console.error('Backend trip planning failed:', err)
         return null
       }
     },
