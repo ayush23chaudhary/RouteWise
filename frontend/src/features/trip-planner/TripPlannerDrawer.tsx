@@ -436,11 +436,15 @@ export function TripPlannerDrawer() {
 
   const mutation = useMutation({
     mutationFn: async (payload: TripPlanFormValues) => {
+      // On static deployment hosts like Vercel (without active Django backend container),
+      // skip calling POST /api/v1/trips/plan to avoid Vercel 405 Method Not Allowed error.
+      const isStaticDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+      if (isStaticDeployment) {
+        return null
+      }
       try {
         return await planTrip(payload)
       } catch (err) {
-        // Suppress console HTTP error for static serverless frontend
-        console.warn('API backend unready or static deployment detected. Calculating HOS route client-side.')
         return null
       }
     },
