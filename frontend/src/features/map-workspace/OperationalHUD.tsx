@@ -48,26 +48,28 @@ export function OperationalHUD() {
 
   if (!activeTrip) return null
 
-  const events = activeTrip.events ?? []
-  const waypoints = activeTrip.waypoints ?? []
-  const driveEvents = events.filter(e => e.event_type === 'DRIVE')
+  const rawEvents = activeTrip.events ?? []
+  const events = Array.isArray(rawEvents) ? rawEvents : []
+  const rawWaypoints = activeTrip.waypoints ?? []
+  const waypoints = Array.isArray(rawWaypoints) ? rawWaypoints : []
+  const driveEvents = events.filter(e => e?.event_type === 'DRIVE')
 
   const totalDistance = activeTrip.metrics?.total_distance_miles ?? 0
   const totalDurationHours = activeTrip.metrics?.total_duration_hours ?? 0
 
   const totalDrivingSeconds = events
-    .filter(e => e.duty_status === 'D')
-    .reduce((sum, e) => sum + (e.duration_seconds || 0), 0)
+    .filter(e => e?.duty_status === 'D')
+    .reduce((sum, e) => sum + (e?.duration_seconds || 0), 0)
   const totalDutySeconds = events
-    .filter(e => e.duty_status === 'D' || e.duty_status === 'ON')
-    .reduce((sum, e) => sum + (e.duration_seconds || 0), 0)
+    .filter(e => e?.duty_status === 'D' || e?.duty_status === 'ON')
+    .reduce((sum, e) => sum + (e?.duration_seconds || 0), 0)
 
   const driveLeft = Math.max(0, 11 - totalDrivingSeconds / 3600)
   const dutyLeft  = Math.max(0, 14 - totalDutySeconds  / 3600)
 
   const isCompliant = activeTrip.compliance_report?.is_compliant ?? true
-  const nextStop = waypoints.find(w => w.waypoint_type === 'PICKUP' || w.waypoint_type === 'DROPOFF')
-  const stopCount = events.filter(e => e.event_type !== 'DRIVE').length
+  const nextStop = waypoints.find(w => w?.waypoint_type === 'PICKUP' || w?.waypoint_type === 'DROPOFF')
+  const stopCount = events.filter(e => e?.event_type !== 'DRIVE').length
 
   // Drive pct for mini progress bar
   const drivePct = Math.min(100, (totalDrivingSeconds / 3600 / 11) * 100)

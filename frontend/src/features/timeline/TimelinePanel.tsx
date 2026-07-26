@@ -45,11 +45,12 @@ function formatDuration(event: ScheduleEvent): string {
 }
 
 // Group events by day
-function groupByDay(events: ScheduleEvent[]) {
+function groupByDay(events: ScheduleEvent[] = []) {
+  const safeEvents = Array.isArray(events) ? events : []
   const groups: { date: string; events: ScheduleEvent[] }[] = []
   const seen: Record<string, number> = {}
 
-  for (const event of events) {
+  for (const event of safeEvents) {
     const dateObj = event.start_time ? new Date(event.start_time) : null
     const key = dateObj && !isNaN(dateObj.getTime())
       ? format(dateObj, 'yyyy-MM-dd')
@@ -252,15 +253,16 @@ export function TimelinePanel() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const displayEvents = eventsData ?? activeTrip?.events ?? []
+  const rawEvents = eventsData ?? activeTrip?.events ?? []
+  const displayEvents = Array.isArray(rawEvents) ? rawEvents : []
   const isExpanded = panelMode === 'expanded' || panelMode === 'fullscreen' || panelMode === 'popout'
   const groups = groupByDay(displayEvents)
 
   // Drive stats
   const totalDriveH = displayEvents
-    .filter(e => e.event_type === 'DRIVE')
+    .filter(e => e?.event_type === 'DRIVE')
     .reduce((s, e) => s + (e.duration_seconds ?? 0), 0) / 3600
-  const stopCount = displayEvents.filter(e => e.event_type !== 'DRIVE').length
+  const stopCount = displayEvents.filter(e => e?.event_type !== 'DRIVE').length
 
   return (
     <div

@@ -483,18 +483,22 @@ export function MapWorkspace() {
     ]
 
     if (allCoords.length > 0) {
-      const bounds = allCoords.reduce(
-        (b, coord) => b.extend(coord),
-        new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
-      )
+      try {
+        const bounds = allCoords.reduce(
+          (b, coord) => b.extend(coord),
+          new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
+        )
 
-      map.current.fitBounds(bounds, {
-        padding: { top: 90, bottom: 90, left: 90, right: 420 },
-        pitch: 45,
-        bearing: -10,
-        maxZoom: 13,
-        duration: 1800,
-      })
+        map.current.fitBounds(bounds, {
+          padding: { top: 50, bottom: 50, left: 50, right: 50 },
+          pitch: 30,
+          bearing: 0,
+          maxZoom: 12,
+          duration: 1800,
+        })
+      } catch (e) {
+        console.warn('Map fitBounds safely bypassed:', e)
+      }
     }
 
     return () => {

@@ -174,13 +174,14 @@ export function CompliancePanel() {
     } : null
   )
 
-  const events = activeTrip?.events ?? []
+  const rawEvents = activeTrip?.events ?? []
+  const events = Array.isArray(rawEvents) ? rawEvents : []
   const drivingHours = events
-    .filter(e => e.event_type === 'DRIVE')
-    .reduce((s, e) => s + (e.duration_seconds || 0), 0) / 3600
+    .filter(e => e?.event_type === 'DRIVE')
+    .reduce((s, e) => s + (e?.duration_seconds || 0), 0) / 3600
   const onDutyHours = events
-    .filter(e => ['DRIVE', 'PICKUP', 'DROPOFF', 'PRE_TRIP', 'FUEL_STOP'].includes(e.event_type))
-    .reduce((s, e) => s + (e.duration_seconds || 0), 0) / 3600
+    .filter(e => e?.event_type && ['DRIVE', 'PICKUP', 'DROPOFF', 'PRE_TRIP', 'FUEL_STOP'].includes(e.event_type))
+    .reduce((s, e) => s + (e?.duration_seconds || 0), 0) / 3600
   const cycleHours = 58.5 // from initial_hours_used + drivingHours as proxy
 
   const healthScore = displayReport?.is_compliant ? 98 : 45
