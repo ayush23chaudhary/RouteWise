@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --color-bg-base:       #0A0B0D;
+  --color-bg-surface:    #111318;
+  --color-bg-elevated:   #1A1D25;
+  --color-bg-overlay:    #21252F;
+  --color-bg-hover:      #252830;
+
+  /* Borders */
+  --color-border:        #252830;
+  --color-border-subtle: #1E2128;
+  --color-border-focus:  #3B82F6;
+
+  /* Text */
+  --color-text-primary:   #F1F3F7;
+  --color-text-secondary: #8B92A5;
+  --color-text-tertiary:  #5A6072;
+  --color-text-disabled:  #3A3F4D;
+
+  /* Accent */
+  --color-accent:         #3B82F6;
+  --color-accent-hover:   #2563EB;
+  --color-accent-subtle:  rgba(59, 130, 246, 0.12);
+
+  /* Semantic — Event Colors */
+  --color-driving:        #3B82F6;
+  --color-driving-bg:     rgba(59, 130, 246, 0.12);
+  --color-rest-break:     #F59E0B;
+  --color-rest-break-bg:  rgba(245, 158, 11, 0.12);
+  --color-daily-reset:    #8B5CF6;
+  --color-daily-reset-bg: rgba(139, 92, 246, 0.12);
+  --color-fuel:           #10B981;
+  --color-fuel-bg:        rgba(16, 185, 129, 0.12);
+  --color-pickup:         #06B6D4;
+  --color-pickup-bg:      rgba(6, 182, 212, 0.12);
+  --color-dropoff:        #F97316;
+  --color-dropoff-bg:     rgba(249, 115, 22, 0.12);
+  --color-pretrip:        #6366F1;
+  --color-pretrip-bg:     rgba(99, 102, 241, 0.12);
+
+  /* Status */
+  --color-compliant:      #22C55E;
+  --color-compliant-bg:   rgba(34, 197, 94, 0.12);
+  --color-violation:      #EF4444;
+  --color-violation-bg:   rgba(239, 68, 68, 0.12);
+  --color-warning:        #F59E0B;
+  --color-warning-bg:     rgba(245, 158, 11, 0.12);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Radius */
+  --radius-sm:   3px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;
+  --radius-full: 9999px;
+
+  /* Elevation (box-shadow) */
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:  0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.2);
+
+  /* Transitions */
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base Resets ────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Typography Scale ───────────────────────────────────── */
+.text-display { font-size: 2rem;    font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.text-heading  { font-size: 1.25rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+.text-subhead  { font-size: 1rem;    font-weight: 600; line-height: 1.4; }
+.text-body     { font-size: 0.875rem; font-weight: 400; line-height: 1.5; }
+.text-small    { font-size: 0.75rem;  font-weight: 400; line-height: 1.4; }
+.text-micro    { font-size: 0.6875rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; text-transform: uppercase; }
+.text-mono     { font-family: var(--font-mono); font-size: 0.8125rem; }
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+
+/* ─── Mapbox Overrides ───────────────────────────────────── */
+.mapboxgl-map {
+  width: 100%;
+  height: 100%;
+}
+.mapboxgl-canvas {
+  outline: none;
+  width: 100% !important;
+  height: 100% !important;
+}
+.mapboxgl-ctrl-logo { display: none !important; }
+.mapboxgl-ctrl-attrib { display: none !important; }
+
+
