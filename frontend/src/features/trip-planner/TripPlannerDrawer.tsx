@@ -436,12 +436,8 @@ export function TripPlannerDrawer() {
 
   const mutation = useMutation({
     mutationFn: async (payload: TripPlanFormValues) => {
-      // On static deployment hosts like Vercel (without active Django backend container),
-      // skip calling POST /api/v1/trips/plan to avoid Vercel 405 Method Not Allowed error.
-      const isStaticDeployment = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
-      if (isStaticDeployment) {
-        return null
-      }
+      // Execute request to backend
+
       try {
         return await planTrip(payload)
       } catch (err) {
