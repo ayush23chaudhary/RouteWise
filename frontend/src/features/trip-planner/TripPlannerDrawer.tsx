@@ -480,6 +480,15 @@ export function TripPlannerDrawer() {
         }
       }
 
+      // Interpolate helper for fallback events
+      const interpolate = (p1: any, p2: any, ratio: number) => ({
+        latitude: p1.latitude + (p2.latitude - p1.latitude) * ratio,
+        longitude: p1.longitude + (p2.longitude - p1.longitude) * ratio,
+      })
+
+      const restBreakCoord = interpolate(startCoord, pickupCoord, 0.4)
+      const fuelStopCoord = interpolate(startCoord, pickupCoord, 0.8)
+
       const events = data?.events?.length > 0 ? data.events : [
         {
           id: 'evt-1',
@@ -501,11 +510,11 @@ export function TripPlannerDrawer() {
           duty_status: 'D',
           start_time: variables.start_time,
           end_time: variables.start_time,
-          duration_seconds: 16200,
+          duration_seconds: 14400, // 4 hours
           start_coordinates: startCoord,
-          end_coordinates: pickupCoord,
-          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.4),
-          notes: 'Leg 1: Highway transit to Pickup Hub',
+          end_coordinates: restBreakCoord,
+          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.2),
+          notes: 'Leg 1: Highway transit',
         },
         {
           id: 'evt-3',
@@ -515,27 +524,53 @@ export function TripPlannerDrawer() {
           start_time: variables.start_time,
           end_time: variables.start_time,
           duration_seconds: 1800,
-          start_coordinates: pickupCoord,
-          end_coordinates: pickupCoord,
+          start_coordinates: restBreakCoord,
+          end_coordinates: restBreakCoord,
           distance_miles: 0,
           notes: 'Mandatory 30-min FMCSA Rest Break',
         },
         {
-          id: 'evt-4',
+          id: 'evt-drive2',
           sequence: 4,
+          event_type: 'DRIVE',
+          duty_status: 'D',
+          start_time: variables.start_time,
+          end_time: variables.start_time,
+          duration_seconds: 14400, // 4 hours
+          start_coordinates: restBreakCoord,
+          end_coordinates: fuelStopCoord,
+          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.2),
+          notes: 'Leg 2: Highway transit',
+        },
+        {
+          id: 'evt-4',
+          sequence: 5,
           event_type: 'FUEL_STOP',
           duty_status: 'ON',
           start_time: variables.start_time,
           end_time: variables.start_time,
           duration_seconds: 900,
-          start_coordinates: pickupCoord,
-          end_coordinates: pickupCoord,
+          start_coordinates: fuelStopCoord,
+          end_coordinates: fuelStopCoord,
           distance_miles: 0,
           notes: 'Diesel refueling & inspection',
         },
         {
+          id: 'evt-drive3',
+          sequence: 6,
+          event_type: 'DRIVE',
+          duty_status: 'D',
+          start_time: variables.start_time,
+          end_time: variables.start_time,
+          duration_seconds: 7200, // 2 hours
+          start_coordinates: fuelStopCoord,
+          end_coordinates: pickupCoord,
+          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.1),
+          notes: 'Leg 3: Transit to pickup',
+        },
+        {
           id: 'evt-5',
-          sequence: 5,
+          sequence: 7,
           event_type: 'DAILY_RESET',
           duty_status: 'SB',
           start_time: variables.start_time,
@@ -548,16 +583,16 @@ export function TripPlannerDrawer() {
         },
         {
           id: 'evt-6',
-          sequence: 6,
+          sequence: 8,
           event_type: 'DRIVE',
           duty_status: 'D',
           start_time: variables.start_time,
           end_time: variables.start_time,
-          duration_seconds: Math.round(tripEstimates.drivingHours * 3600 * 0.6),
+          duration_seconds: Math.round(tripEstimates.drivingHours * 3600 * 0.5),
           start_coordinates: pickupCoord,
           end_coordinates: dropoffCoord,
-          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.6),
-          notes: 'Leg 2: Final delivery transit',
+          distance_miles: Math.round(tripEstimates.estimatedDistance * 0.5),
+          notes: 'Leg 4: Final delivery transit',
         },
       ]
 
