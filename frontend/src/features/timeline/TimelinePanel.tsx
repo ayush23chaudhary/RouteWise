@@ -246,10 +246,12 @@ export function TimelinePanel() {
   const { activeTrip, selectedEventId, setSelectedEvent } = useTripStore()
   const { panelMode } = useUIStore()
 
+  const isCustomClientTrip = activeTrip?.id?.startsWith('trip-') || activeTrip?.id === 'demo-la-nyc-70h-cycle'
+
   const { data: eventsData, isLoading } = useQuery({
     queryKey: ['timeline', activeTrip?.id],
     queryFn: () => fetchTimeline(activeTrip!.id),
-    enabled: Boolean(activeTrip?.id) && activeTrip?.id !== 'demo-la-nyc-70h-cycle',
+    enabled: Boolean(activeTrip?.id) && !isCustomClientTrip,
     staleTime: 5 * 60 * 1000,
   })
 

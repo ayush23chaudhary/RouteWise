@@ -160,10 +160,12 @@ function HoursBar({ label, value, total, color }: { label: string; value: number
 export function CompliancePanel() {
   const { activeTrip } = useTripStore()
 
+  const isCustomClientTrip = activeTrip?.id?.startsWith('trip-') || activeTrip?.id === 'demo-la-nyc-70h-cycle'
+
   const { data: report, isLoading } = useQuery({
     queryKey: ['compliance', activeTrip?.id],
     queryFn: () => fetchCompliance(activeTrip!.id),
-    enabled: Boolean(activeTrip?.id) && activeTrip?.id !== 'demo-la-nyc-70h-cycle',
+    enabled: Boolean(activeTrip?.id) && !isCustomClientTrip,
     staleTime: 5 * 60 * 1000,
   })
 

@@ -259,10 +259,12 @@ export function EldLogsPanel() {
   const { activeTrip } = useTripStore()
   const [logIndex, setLogIndex] = useState(0)
 
+  const isCustomClientTrip = activeTrip?.id?.startsWith('trip-') || activeTrip?.id === 'demo-la-nyc-70h-cycle'
+
   const { data: logs, isLoading } = useQuery({
     queryKey: ['logs', activeTrip?.id],
     queryFn: () => fetchLogs(activeTrip!.id),
-    enabled: Boolean(activeTrip?.id) && activeTrip?.id !== 'demo-la-nyc-70h-cycle',
+    enabled: Boolean(activeTrip?.id) && !isCustomClientTrip,
     staleTime: 5 * 60 * 1000,
   })
 
