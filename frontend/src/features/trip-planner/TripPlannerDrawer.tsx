@@ -15,8 +15,6 @@ import {
   SlidersHorizontal,
   Globe,
   Maximize2,
-  Minimize2,
-  Maximize,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
@@ -26,6 +24,7 @@ import {
   RotateCcw,
   Calendar,
   Info,
+  Route,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { tripPlanSchema, type TripPlanFormValues } from './schema'
@@ -38,27 +37,127 @@ import { useMapStore } from '@/stores/mapStore'
 
 // Pre-configured Freight Logistics Hubs with Coordinates & Addresses
 const FREIGHT_HUBS = [
-  { id: 'la', name: 'Los Angeles Freight Terminal', city: 'Los Angeles, CA', address: '2400 E 8th St, Los Angeles, CA 90021', lat: 34.0522, lng: -118.2437 },
-  { id: 'den', name: 'Denver Intermodal Logistics Depot', city: 'Denver, CO', address: '4800 York St, Denver, CO 80216', lat: 39.7392, lng: -104.9903 },
-  { id: 'chi', name: 'Chicago Central Distribution Hub', city: 'Chicago, IL', address: '1500 S Western Ave, Chicago, IL 60608', lat: 41.8781, lng: -87.6298 },
-  { id: 'nyc', name: 'New York Container Marine Terminal', city: 'Port Newark, NJ / NYC', address: '241 Port St, Newark, NJ 07114', lat: 40.7128, lng: -74.0060 },
-  { id: 'dal', name: 'Dallas Logistics & Freight Terminal', city: 'Dallas, TX', address: '3600 Logistics Dr, Dallas, TX 75241', lat: 32.7767, lng: -96.7970 },
-  { id: 'atl', name: 'Atlanta Regional Distribution Center', city: 'Atlanta, GA', address: '2800 Fulton Industrial Blvd, Atlanta, GA 30336', lat: 33.7490, lng: -84.3880 },
-  { id: 'sea', name: 'Seattle Port Logistics Hub', city: 'Seattle, WA', address: '3443 W Marginal Way SW, Seattle, WA 98124', lat: 47.6062, lng: -122.3321 },
+  { id: 'la',  name: 'Los Angeles Freight Terminal',      city: 'Los Angeles, CA',       address: '2400 E 8th St, Los Angeles, CA 90021',      lat: 34.0522, lng: -118.2437 },
+  { id: 'den', name: 'Denver Intermodal Logistics Depot', city: 'Denver, CO',            address: '4800 York St, Denver, CO 80216',             lat: 39.7392, lng: -104.9903 },
+  { id: 'chi', name: 'Chicago Central Distribution Hub',  city: 'Chicago, IL',           address: '1500 S Western Ave, Chicago, IL 60608',      lat: 41.8781, lng: -87.6298  },
+  { id: 'nyc', name: 'New York Container Marine Terminal',city: 'Port Newark, NJ / NYC', address: '241 Port St, Newark, NJ 07114',              lat: 40.7128, lng: -74.0060  },
+  { id: 'dal', name: 'Dallas Logistics & Freight Terminal',city: 'Dallas, TX',           address: '3600 Logistics Dr, Dallas, TX 75241',        lat: 32.7767, lng: -96.7970  },
+  { id: 'atl', name: 'Atlanta Regional Distribution Center',city: 'Atlanta, GA',         address: '2800 Fulton Industrial Blvd, Atlanta, GA 30336', lat: 33.7490, lng: -84.3880 },
+  { id: 'sea', name: 'Seattle Port Logistics Hub',        city: 'Seattle, WA',           address: '3443 W Marginal Way SW, Seattle, WA 98124',  lat: 47.6062, lng: -122.3321 },
 ]
 
-// Calculate approximate haversine distance in miles between 2 points
 function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3958.8 // Radius of earth in miles
+  const R = 3958.8
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+// ── Step indicator ────────────────────────────────────────────────────────────
+function StepBar({ activeStep, steps, setActiveStep }: {
+  activeStep: number
+  steps: { id: number; label: string; shortLabel: string }[]
+  setActiveStep: (s: any) => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        padding: '0 24px',
+        borderBottom: '1px solid var(--rw-border)',
+        background: 'rgba(255,255,255,0.01)',
+        flexShrink: 0,
+      }}
+    >
+      {steps.map((step, idx) => {
+        const isActive = activeStep === step.id
+        const isPast = activeStep > step.id
+        return (
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => setActiveStep(step.id as any)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 6,
+              padding: '10px 4px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'all var(--rw-t-normal)',
+            }}
+          >
+            {/* Connector line */}
+            {idx < steps.length - 1 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  left: '50%',
+                  width: '100%',
+                  height: '1px',
+                  background: isPast ? 'var(--rw-accent)' : 'var(--rw-border)',
+                  zIndex: 0,
+                  transition: 'background var(--rw-t-slow)',
+                }}
+              />
+            )}
+            {/* Step circle */}
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: `2px solid ${isActive ? 'var(--rw-accent)' : isPast ? 'var(--rw-accent)' : 'var(--rw-border-medium)'}`,
+                background: isActive
+                  ? 'var(--rw-accent)'
+                  : isPast
+                  ? 'var(--rw-accent)'
+                  : 'var(--rw-bg-elevated)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isActive || isPast ? '#fff' : 'var(--rw-text-tertiary)',
+                fontSize: '10px',
+                fontWeight: 700,
+                zIndex: 1,
+                transition: 'all var(--rw-t-normal)',
+                boxShadow: isActive ? '0 0 12px rgba(59,130,246,0.45)' : 'none',
+              }}
+            >
+              {isPast && !isActive ? <CheckCircle2 size={11} /> : step.id}
+            </div>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: isActive
+                  ? 'var(--rw-accent-bright)'
+                  : isPast
+                  ? 'var(--rw-text-secondary)'
+                  : 'var(--rw-text-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                lineHeight: 1,
+              }}
+            >
+              {step.shortLabel}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Location Card ─────────────────────────────────────────────────────────────
 interface LocationCardProps {
   title: string
   stepNumber: string
@@ -79,12 +178,10 @@ function FreightLocationCard({
   const currentLat = watch(`${prefix}.latitude`)
   const currentLng = watch(`${prefix}.longitude`)
 
-  // Detect matching preset hub if any
-  const matchedHub = useMemo(() => {
-    return FREIGHT_HUBS.find(
-      h => Math.abs(h.lat - currentLat) < 0.05 && Math.abs(h.lng - currentLng) < 0.05
-    )
-  }, [currentLat, currentLng])
+  const matchedHub = useMemo(() =>
+    FREIGHT_HUBS.find(h => Math.abs(h.lat - currentLat) < 0.05 && Math.abs(h.lng - currentLng) < 0.05),
+    [currentLat, currentLng]
+  )
 
   const handleHubSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const hub = FREIGHT_HUBS.find(h => h.id === e.target.value)
@@ -95,89 +192,174 @@ function FreightLocationCard({
   }
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800/90 hover:border-slate-700/90 rounded-3xl p-6 shadow-xl transition-all space-y-4">
+    <div
+      style={{
+        borderRadius: 'var(--rw-radius-2xl)',
+        border: `1px solid var(--rw-border)`,
+        background: 'var(--rw-bg-elevated)',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        transition: 'border-color var(--rw-t-normal)',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--rw-border-medium)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--rw-border)' }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-md flex-shrink-0"
             style={{
-              backgroundColor: `${accentColor}15`,
-              borderColor: `${accentColor}40`,
+              width: 40,
+              height: 40,
+              borderRadius: 'var(--rw-radius-xl)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               color: accentColor,
+              background: `${accentColor}12`,
+              border: `1px solid ${accentColor}30`,
+              flexShrink: 0,
             }}
           >
             {icon}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  padding: '1px 7px',
+                  borderRadius: 'var(--rw-radius-full)',
+                  background: `${accentColor}14`,
+                  color: accentColor,
+                  border: `1px solid ${accentColor}30`,
+                }}
+              >
                 {stepNumber}
               </span>
-              <h4 className="text-base font-bold text-slate-100 tracking-tight">{title}</h4>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--rw-text-primary)', letterSpacing: '-0.01em' }}>
+                {title}
+              </h4>
             </div>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">{subtitle}</p>
+            <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', lineHeight: 1.3 }}>{subtitle}</p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => setShowCoords(!showCoords)}
-          className="text-xs font-semibold text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 'var(--rw-radius-lg)',
+            border: '1px solid var(--rw-border)',
+            background: 'var(--rw-bg-surface)',
+            color: showCoords ? 'var(--rw-accent-bright)' : 'var(--rw-text-tertiary)',
+            fontSize: '11px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all var(--rw-t-fast)',
+            flexShrink: 0,
+          }}
         >
-          <span>{showCoords ? 'Hide Lat/Lng' : 'Edit Coords'}</span>
-          <ChevronDown size={14} className={`transform transition-transform ${showCoords ? 'rotate-180' : ''}`} />
+          {showCoords ? 'Hide' : 'Coords'}
+          <ChevronDown
+            size={12}
+            style={{ transform: showCoords ? 'rotate(180deg)' : 'none', transition: 'transform var(--rw-t-fast)' }}
+          />
         </button>
       </div>
 
-      {/* Main Hub Search Selector */}
-      <div className="space-y-2 pt-1">
-        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-          Search Location / Commercial Hub
+      {/* Hub Selector */}
+      <div>
+        <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 6 }}>
+          Commercial Freight Terminal
         </label>
         <select
           value={matchedHub?.id || ''}
           onChange={handleHubSelect}
-          className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-100 focus:outline-none focus:border-blue-500 shadow-inner"
+          style={{
+            width: '100%',
+            background: 'var(--rw-bg-surface)',
+            border: '1px solid var(--rw-border-medium)',
+            borderRadius: 'var(--rw-radius-lg)',
+            padding: '9px 12px',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: 'var(--rw-text-primary)',
+            fontFamily: 'var(--rw-font-sans)',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
         >
-          <option value="">-- Choose Commercial Freight Terminal --</option>
+          <option value="">— Select a freight terminal —</option>
           {FREIGHT_HUBS.map(hub => (
             <option key={hub.id} value={hub.id}>
-              {hub.name} ({hub.city})
+              {hub.name} · {hub.city}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Selected Location Summary Badge */}
+      {/* Selected location summary */}
       {matchedHub ? (
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-300">
-          <MapPin size={16} className="text-blue-400 flex-shrink-0" />
-          <div className="flex-1 truncate">
-            <span className="font-bold text-slate-100">{matchedHub.name}</span>
-            <span className="block text-[11px] text-slate-400 font-sans truncate">{matchedHub.address}</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 'var(--rw-radius-lg)',
+            background: `${accentColor}08`,
+            border: `1px solid ${accentColor}25`,
+          }}
+        >
+          <MapPin size={14} style={{ color: accentColor, flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)', lineHeight: 1.3 }}>
+              {matchedHub.name}
+            </p>
+            <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', marginTop: 2 }}>
+              {matchedHub.address}
+            </p>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 px-1">
+        <div style={{ display: 'flex', gap: 12, fontSize: '11px', fontFamily: 'var(--rw-font-mono)', color: 'var(--rw-text-tertiary)' }}>
           <span>Lat: {currentLat ? currentLat.toFixed(4) : '—'}</span>
-          <span>•</span>
+          <span>·</span>
           <span>Lng: {currentLng ? currentLng.toFixed(4) : '—'}</span>
         </div>
       )}
 
-      {/* Collapsible Manual Lat/Lng Fields */}
+      {/* Collapsible coordinate inputs */}
       <AnimatePresence>
         {showCoords && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden pt-2 border-t border-slate-800/80"
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
           >
-            <div className="grid grid-cols-2 gap-4">
+            <div
+              style={{
+                paddingTop: 12,
+                borderTop: '1px solid var(--rw-border)',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+              }}
+            >
               <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5 }}>
                   Latitude
                 </label>
                 <Input
@@ -189,7 +371,7 @@ function FreightLocationCard({
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 5 }}>
                   Longitude
                 </label>
                 <Input
@@ -208,12 +390,12 @@ function FreightLocationCard({
   )
 }
 
+// ── Main TripPlannerDrawer ────────────────────────────────────────────────────
 export function TripPlannerDrawer() {
   const { isPlannerOpen, setIsPlannerOpen } = useUIStore()
   const { setActiveTrip } = useTripStore()
   const { flyTo } = useMapStore()
 
-  // Workflow Wizard Active Step (Step 1 -> Step 2 -> Step 3 -> Step 4)
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1)
   const [isFocusMode, setIsFocusMode] = useState(false)
 
@@ -224,118 +406,111 @@ export function TripPlannerDrawer() {
       initial_hours_used: 0,
       start_time: new Date().toISOString().slice(0, 16),
       driver_id: crypto.randomUUID(),
-      start_location: { latitude: 34.0522, longitude: -118.2437 },
-      pickup_location: { latitude: 39.7392, longitude: -104.9903 },
-      dropoff_location: { latitude: 40.7128, longitude: -74.0060 },
+      start_location:   { latitude: 34.0522,  longitude: -118.2437 },
+      pickup_location:  { latitude: 39.7392,  longitude: -104.9903 },
+      dropoff_location: { latitude: 40.7128,  longitude: -74.0060  },
     },
   })
 
   const formValues = watch()
 
-  // Live pre-calculated trip metrics based on selected coordinates
   const tripEstimates = useMemo(() => {
-    const start = formValues.start_location || { latitude: 34.0522, longitude: -118.2437 }
-    const pickup = formValues.pickup_location || { latitude: 39.7392, longitude: -104.9903 }
-    const dropoff = formValues.dropoff_location || { latitude: 40.7128, longitude: -74.0060 }
+    const start   = formValues.start_location   || { latitude: 34.0522, longitude: -118.2437 }
+    const pickup  = formValues.pickup_location  || { latitude: 39.7392, longitude: -104.9903 }
+    const dropoff = formValues.dropoff_location || { latitude: 40.7128, longitude: -74.0060  }
 
     const leg1 = haversineMiles(start.latitude, start.longitude, pickup.latitude, pickup.longitude)
     const leg2 = haversineMiles(pickup.latitude, pickup.longitude, dropoff.latitude, dropoff.longitude)
-    const directDist = Math.round(leg1 + leg2)
-    // Add 15% highway routing factor for realistic driving miles
-    const estimatedDistance = Math.round(directDist * 1.15)
-    
-    // Average truck speed ~55 mph
+    const estimatedDistance = Math.round((leg1 + leg2) * 1.15)
     const drivingHours = Math.round((estimatedDistance / 55) * 10) / 10
-    const fuelStops = Math.max(1, Math.floor(estimatedDistance / 1000))
+    const fuelStops  = Math.max(1, Math.floor(estimatedDistance / 1000))
     const restBreaks = Math.max(1, Math.floor(drivingHours / 8))
     const dailyResets = Math.max(1, Math.floor((drivingHours + (formValues.initial_hours_used || 0)) / 11))
     const totalDurationHours = Math.round((drivingHours + fuelStops * 0.75 + restBreaks * 0.5 + dailyResets * 10) * 10) / 10
 
-    // Departure & Arrival calculation
     const depDate = formValues.start_time ? new Date(formValues.start_time) : new Date()
     const arrDate = new Date(depDate.getTime() + totalDurationHours * 3600 * 1000)
 
-    return {
-      estimatedDistance,
-      drivingHours,
-      totalDurationHours,
-      fuelStops,
-      restBreaks,
-      dailyResets,
-      depDate,
-      arrDate,
-    }
+    return { estimatedDistance, drivingHours, totalDurationHours, fuelStops, restBreaks, dailyResets, depDate, arrDate }
   }, [formValues])
 
   const mutation = useMutation({
     mutationFn: planTrip,
     onSuccess: (data: any, variables: TripPlanFormValues) => {
-      // Build robust waypoints array if backend did not include coordinates
-      const startCoord = variables.start_location
+      const startCoord  = variables.start_location
       const pickupCoord = variables.pickup_location
       const dropoffCoord = variables.dropoff_location
 
-      const waypoints = data.waypoints && data.waypoints.length > 0 ? data.waypoints : [
-        { id: 'wp-start', sequence: 1, waypoint_type: 'START', coordinates: startCoord, address: 'Origin Depot' },
-        { id: 'wp-pickup', sequence: 2, waypoint_type: 'PICKUP', coordinates: pickupCoord, address: 'Cargo Pickup Hub' },
+      const waypoints = data.waypoints?.length > 0 ? data.waypoints : [
+        { id: 'wp-start',   sequence: 1, waypoint_type: 'START',   coordinates: startCoord,   address: 'Origin Depot' },
+        { id: 'wp-pickup',  sequence: 2, waypoint_type: 'PICKUP',  coordinates: pickupCoord,  address: 'Cargo Pickup Hub' },
         { id: 'wp-dropoff', sequence: 3, waypoint_type: 'DROPOFF', coordinates: dropoffCoord, address: 'Delivery Destination' },
       ]
 
-      // Prioritize live OpenRouteService highway geometry from backend if returned
-      let route_geometry: [number, number][] = data.route_geometry && data.route_geometry.length > 0
-        ? data.route_geometry
-        : []
+      let route_geometry: [number, number][] = data.route_geometry?.length > 0 ? data.route_geometry : []
 
       if (route_geometry.length === 0) {
         const steps = 30
-        // Segment 1: Start -> Pickup
         for (let i = 0; i <= steps; i++) {
           const t = i / steps
-          const lat = startCoord.latitude + (pickupCoord.latitude - startCoord.latitude) * t
-          const lng = startCoord.longitude + (pickupCoord.longitude - startCoord.longitude) * t
-          route_geometry.push([lng, lat])
+          route_geometry.push([
+            startCoord.longitude + (pickupCoord.longitude - startCoord.longitude) * t,
+            startCoord.latitude  + (pickupCoord.latitude  - startCoord.latitude)  * t,
+          ])
         }
-        // Segment 2: Pickup -> Dropoff
         for (let i = 1; i <= steps; i++) {
           const t = i / steps
-          const lat = pickupCoord.latitude + (dropoffCoord.latitude - pickupCoord.latitude) * t
-          const lng = pickupCoord.longitude + (dropoffCoord.longitude - pickupCoord.longitude) * t
-          route_geometry.push([lng, lat])
+          route_geometry.push([
+            pickupCoord.longitude + (dropoffCoord.longitude - pickupCoord.longitude) * t,
+            pickupCoord.latitude  + (dropoffCoord.latitude  - pickupCoord.latitude)  * t,
+          ])
         }
       }
 
-      // Attach coordinates to backend events if missing
       const events = (data.events || []).map((evt: any, idx: number, arr: any[]) => {
-        const progressPct = idx / Math.max(1, arr.length - 1)
-        const pointIdx = Math.min(Math.floor(progressPct * (route_geometry.length - 1)), route_geometry.length - 1)
-        const pt = route_geometry[pointIdx]
-        
+        const pct = idx / Math.max(1, arr.length - 1)
+        const ptIdx = Math.min(Math.floor(pct * (route_geometry.length - 1)), route_geometry.length - 1)
+        const pt = route_geometry[ptIdx]
         return {
           ...evt,
           start_coordinates: evt.start_coordinates || { latitude: pt[1], longitude: pt[0] },
-          end_coordinates: evt.end_coordinates || { latitude: pt[1], longitude: pt[0] },
+          end_coordinates:   evt.end_coordinates   || { latitude: pt[1], longitude: pt[0] },
         }
       })
 
-      const tripObj = {
+      setActiveTrip({
         ...data,
         id: data.id || data.trip_id || crypto.randomUUID(),
         status: 'ACTIVE',
         waypoints,
         events,
         route_geometry,
-      }
+      })
 
-      setActiveTrip(tripObj)
       if (startCoord) flyTo([startCoord.longitude, startCoord.latitude], 5)
-      toast.success('FMCSA Compliant Route Schedule Generated!')
+      toast.success('FMCSA compliant route generated!', {
+        icon: '✅',
+        style: {
+          background: 'var(--rw-bg-elevated)',
+          color: 'var(--rw-text-primary)',
+          border: '1px solid var(--rw-border)',
+          fontSize: '0.8125rem',
+        },
+      })
       setIsPlannerOpen(false)
       setActiveStep(1)
       setIsFocusMode(false)
       reset()
     },
     onError: (err: any) => {
-      toast.error(err?.detail ?? 'Failed to plan trip. Please verify coordinates and retry.')
+      toast.error(err?.detail ?? 'Failed to plan trip. Verify coordinates and retry.', {
+        style: {
+          background: 'var(--rw-bg-elevated)',
+          color: 'var(--rw-text-primary)',
+          border: '1px solid var(--rw-violation-border)',
+          fontSize: '0.8125rem',
+        },
+      })
     },
   })
 
@@ -344,355 +519,633 @@ export function TripPlannerDrawer() {
   }
 
   const steps = [
-    { id: 1, label: '1. Commercial Route' },
-    { id: 2, label: '2. Driver & HOS' },
-    { id: 3, label: '3. Trip Preview' },
-    { id: 4, label: '4. Dispatch' },
+    { id: 1, label: '1. Route',   shortLabel: 'Route'   },
+    { id: 2, label: '2. Driver',  shortLabel: 'Driver'  },
+    { id: 3, label: '3. Preview', shortLabel: 'Preview' },
+    { id: 4, label: '4. Dispatch',shortLabel: 'Dispatch'},
   ]
+
+  const DRAWER_STYLES = {
+    normal: {
+      position: 'fixed' as const,
+      right: 0, top: 0, bottom: 0,
+      width: '100%', maxWidth: '640px',
+    },
+    focus: {
+      position: 'fixed' as const,
+      inset: '24px',
+      maxWidth: '960px',
+      margin: 'auto',
+      borderRadius: 'var(--rw-radius-3xl)',
+    },
+  }
+
+  const drawerStyle = isFocusMode ? DRAWER_STYLES.focus : DRAWER_STYLES.normal
+
+  // Section heading component
+  const SectionHeading = ({ icon, title, subtitle, color, step }: any) => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: 16,
+        borderBottom: '1px solid var(--rw-border)',
+        marginBottom: 20,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 'var(--rw-radius-xl)',
+            background: `${color}12`,
+            border: `1px solid ${color}30`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color,
+          }}
+        >
+          {icon}
+        </div>
+        <div>
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--rw-text-primary)', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+            {title}
+          </h3>
+          {subtitle && (
+            <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', marginTop: 2 }}>{subtitle}</p>
+          )}
+        </div>
+      </div>
+      <span
+        style={{
+          fontFamily: 'var(--rw-font-mono)',
+          fontSize: '10px',
+          fontWeight: 700,
+          color,
+          background: `${color}12`,
+          border: `1px solid ${color}30`,
+          borderRadius: 'var(--rw-radius-full)',
+          padding: '3px 10px',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {step}
+      </span>
+    </div>
+  )
 
   return (
     <AnimatePresence>
       {isPlannerOpen && (
         <>
-          {/* Backdrop Blur Overlay */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-30"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.72)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 30,
+            }}
             onClick={() => setIsPlannerOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Drawer Container (Normal Sidebar vs Pop-out Focus Mode Modal) */}
+          {/* Drawer */}
           <motion.aside
-            initial={{ x: isFocusMode ? 0 : '100%', scale: isFocusMode ? 0.95 : 1, opacity: isFocusMode ? 0 : 1 }}
-            animate={{ x: 0, scale: 1, opacity: 1 }}
-            exit={{ x: isFocusMode ? 0 : '100%', scale: isFocusMode ? 0.95 : 1, opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-            className={
-              isFocusMode
-                ? 'fixed inset-x-6 inset-y-6 md:inset-x-20 md:inset-y-10 z-40 max-w-5xl mx-auto bg-slate-950/98 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100'
-                : 'fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-slate-950/95 border-l border-slate-800 shadow-2xl z-40 flex flex-col overflow-hidden text-slate-100'
-            }
+            initial={{ x: isFocusMode ? 0 : '100%', opacity: isFocusMode ? 0 : 1, scale: isFocusMode ? 0.96 : 1 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: isFocusMode ? 0 : '100%', opacity: 0, scale: isFocusMode ? 0.96 : 1 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.8 }}
+            style={{
+              ...drawerStyle,
+              zIndex: 40,
+              background: 'var(--rw-bg-surface)',
+              border: '1px solid var(--rw-border-medium)',
+              boxShadow: 'var(--rw-shadow-xl)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              color: 'var(--rw-text-primary)',
+              fontFamily: 'var(--rw-font-sans)',
+              borderLeft: isFocusMode ? '1px solid var(--rw-border-medium)' : '1px solid var(--rw-border-medium)',
+            }}
             role="dialog"
-            aria-label="Dispatch Trip Planner Workspace"
+            aria-modal="true"
+            aria-label="Dispatch Trip Planner"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800/80 bg-slate-900/80 flex-shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/30 border border-blue-400/30">
-                  <Truck size={24} />
+            {/* ── Header ── */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--rw-border)',
+                background: 'rgba(255,255,255,0.02)',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 'var(--rw-radius-xl)',
+                    background: 'linear-gradient(135deg, #2563EB, #6366F1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 16px rgba(59,130,246,0.4)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Truck size={22} style={{ color: '#fff' }} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-slate-100 flex items-center gap-2.5">
-                    Freight Mission Planner <Sparkles size={18} className="text-blue-400" />
+                  <h2
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: 800,
+                      color: 'var(--rw-text-primary)',
+                      letterSpacing: '-0.02em',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    Freight Mission Planner
+                    <Sparkles size={15} style={{ color: 'var(--rw-accent-bright)' }} />
                   </h2>
-                  <p className="text-xs text-slate-400 font-medium">Configure HOS-compliant commercial dispatch schedules</p>
+                  <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', marginTop: 2 }}>
+                    HOS-compliant commercial dispatch scheduling
+                  </p>
                 </div>
               </div>
 
-              {/* Controls */}
-              <div className="flex items-center gap-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
                   type="button"
                   onClick={() => setIsFocusMode(!isFocusMode)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isFocusMode
-                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-slate-800'
-                  }`}
-                  title={isFocusMode ? 'Exit Focus Mode' : 'Enter Focus Mode Workspace'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    borderRadius: 'var(--rw-radius-lg)',
+                    border: `1px solid ${isFocusMode ? 'rgba(139,92,246,0.4)' : 'var(--rw-border)'}`,
+                    background: isFocusMode ? 'rgba(139,92,246,0.12)' : 'var(--rw-bg-elevated)',
+                    color: isFocusMode ? '#A78BFA' : 'var(--rw-text-secondary)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all var(--rw-t-fast)',
+                  }}
                 >
-                  <Maximize2 size={16} />
-                  <span>{isFocusMode ? 'Standard View' : 'Focus Mode'}</span>
+                  <Maximize2 size={13} />
+                  {isFocusMode ? 'Standard' : 'Focus'}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsPlannerOpen(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-colors ml-1"
-                  aria-label="Close drawer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: 'var(--rw-radius-lg)',
+                    border: '1px solid var(--rw-border)',
+                    background: 'var(--rw-bg-elevated)',
+                    color: 'var(--rw-text-tertiary)',
+                    cursor: 'pointer',
+                    transition: 'all var(--rw-t-fast)',
+                  }}
+                  aria-label="Close planner"
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--rw-text-primary)'
+                    ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--rw-bg-hover)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--rw-text-tertiary)'
+                    ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--rw-bg-elevated)'
+                  }}
                 >
-                  <X size={20} />
+                  <X size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Workflow Step Bar */}
-            <div className="grid grid-cols-4 border-b border-slate-800 bg-slate-950 px-6 py-3 gap-2 flex-shrink-0">
-              {steps.map(step => (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => setActiveStep(step.id as any)}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center border ${
-                    activeStep === step.id
-                      ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 shadow-sm'
-                      : 'text-slate-400 border-transparent hover:bg-slate-900 hover:text-slate-200'
-                  }`}
-                >
-                  {step.label}
-                </button>
-              ))}
-            </div>
+            {/* ── Step Bar ── */}
+            <StepBar activeStep={activeStep} steps={steps} setActiveStep={setActiveStep} />
 
-            {/* Form Content Body */}
-            <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-8 space-y-8">
-              {/* STEP 1: Commercial Route Locations */}
-              {activeStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <Globe size={20} className="text-blue-400" /> Commercial Route Terminals
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Select commercial origin, pickup loading facility, and delivery destination</p>
-                    </div>
-                    <span className="text-xs font-mono text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                      Step 1 of 4
-                    </span>
-                  </div>
-
-                  <div className="space-y-5">
+            {/* ── Form Body ── */}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto" style={{ padding: '20px 24px' }}>
+              <AnimatePresence mode="wait">
+                {/* STEP 1: Locations */}
+                {activeStep === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                  >
+                    <SectionHeading
+                      icon={<Globe size={18} />}
+                      title="Commercial Route Terminals"
+                      subtitle="Select origin, pickup, and delivery facilities"
+                      color="#3B82F6"
+                      step="Step 1 of 4"
+                    />
                     <FreightLocationCard
-                      title="Origin Commercial Depot"
+                      title="Origin Depot"
                       stepNumber="Origin"
                       subtitle="Starting terminal or fleet home base"
-                      icon={<Navigation size={22} />}
+                      icon={<Navigation size={18} />}
                       accentColor="#3B82F6"
                       prefix="start_location"
-                      setValue={setValue}
-                      register={register}
-                      watch={watch}
-                      errors={errors}
+                      setValue={setValue} register={register} watch={watch} errors={errors}
                     />
-
                     <FreightLocationCard
-                      title="Cargo Pickup Loading Hub"
+                      title="Cargo Pickup Hub"
                       stepNumber="Pickup"
                       subtitle="Intermediate freight loading facility"
-                      icon={<Package size={22} />}
+                      icon={<Package size={18} />}
                       accentColor="#06B6D4"
                       prefix="pickup_location"
-                      setValue={setValue}
-                      register={register}
-                      watch={watch}
-                      errors={errors}
+                      setValue={setValue} register={register} watch={watch} errors={errors}
                     />
-
                     <FreightLocationCard
-                      title="Delivery Destination Terminal"
+                      title="Delivery Terminal"
                       stepNumber="Dropoff"
-                      subtitle="Final customer unloading facility"
-                      icon={<MapPin size={22} />}
+                      subtitle="Final customer unloading destination"
+                      icon={<MapPin size={18} />}
                       accentColor="#F97316"
                       prefix="dropoff_location"
-                      setValue={setValue}
-                      register={register}
-                      watch={watch}
-                      errors={errors}
+                      setValue={setValue} register={register} watch={watch} errors={errors}
                     />
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
 
-              {/* STEP 2: Driver Schedule & HOS Rules */}
-              {activeStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <SlidersHorizontal size={20} className="text-purple-400" /> Driver HOS & Schedule Parameters
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Specify departure time and initial HOS cycle hours already used</p>
+                {/* STEP 2: Driver & HOS */}
+                {activeStep === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                  >
+                    <SectionHeading
+                      icon={<SlidersHorizontal size={18} />}
+                      title="Driver HOS & Schedule"
+                      subtitle="Departure time and pre-trip cycle hours"
+                      color="#8B5CF6"
+                      step="Step 2 of 4"
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                      <div
+                        style={{
+                          background: 'var(--rw-bg-elevated)',
+                          border: '1px solid var(--rw-border)',
+                          borderRadius: 'var(--rw-radius-2xl)',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: 'var(--rw-text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.07em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 7,
+                          }}
+                        >
+                          <Calendar size={14} style={{ color: '#60A5FA' }} />
+                          Departure Date & Time
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          error={(errors as any)?.start_time?.message}
+                          {...register('start_time')}
+                        />
+                        <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', lineHeight: 1.5 }}>
+                          Used for HOS break predictions and ETA calculation.
+                        </p>
+                      </div>
+
+                      <div
+                        style={{
+                          background: 'var(--rw-bg-elevated)',
+                          border: '1px solid var(--rw-border)',
+                          borderRadius: 'var(--rw-radius-2xl)',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: 'var(--rw-text-secondary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.07em',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 7,
+                          }}
+                        >
+                          <Clock size={14} style={{ color: '#4ADE80' }} />
+                          Initial Cycle Hours Used
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          placeholder="e.g. 10.5"
+                          error={(errors as any)?.initial_hours_used?.message}
+                          {...register('initial_hours_used', { valueAsNumber: true })}
+                        />
+                        <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', lineHeight: 1.5 }}>
+                          Hours used in current 8-day rolling HOS window.
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs font-mono text-purple-400 font-bold bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
-                      Step 2 of 4
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-3.5 shadow-xl">
-                      <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <Calendar size={18} className="text-blue-400" /> Planned Departure Date & Time
-                      </label>
-                      <Input
-                        type="datetime-local"
-                        error={(errors as any)?.start_time?.message}
-                        {...register('start_time')}
-                      />
-                      <p className="text-xs text-slate-400">Departure time used for HOS rest break and arrival predictions.</p>
-                    </div>
-
-                    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-3.5 shadow-xl">
-                      <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <Clock size={18} className="text-emerald-400" /> Initial Cycle Hours Used
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        placeholder="e.g. 10.5"
-                        error={(errors as any)?.initial_hours_used?.message}
-                        {...register('initial_hours_used', { valueAsNumber: true })}
-                      />
-                      <p className="text-xs text-slate-400">Hours spent driving/on-duty in the current 8-day rolling window prior to departure.</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-3.5 shadow-xl">
-                    <label className="text-xs font-bold text-slate-200 uppercase tracking-wide block">
-                      FMCSA Commercial HOS Regulation Standard
-                    </label>
-                    <select
-                      className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3.5 text-xs font-semibold text-slate-200 focus:outline-none focus:border-blue-500 shadow-inner"
-                      {...register('cycle_type')}
+                    <div
+                      style={{
+                        background: 'var(--rw-bg-elevated)',
+                        border: '1px solid var(--rw-border)',
+                        borderRadius: 'var(--rw-radius-2xl)',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                      }}
                     >
-                      <option value="70h_8d">70 Hours / 8 Days (Property-Carrying Interstate Commercial Trucking Rule)</option>
-                    </select>
-                    <div className="flex items-center gap-2 text-xs text-slate-400 pt-1">
-                      <Info size={14} className="text-blue-400 flex-shrink-0" />
-                      <span>Enforces 11h driving, 14h duty shift, 30m rest break, and 10h daily resets automatically.</span>
+                      <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rw-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        FMCSA HOS Regulation Standard
+                      </label>
+                      <select
+                        style={{
+                          width: '100%',
+                          background: 'var(--rw-bg-surface)',
+                          border: '1px solid var(--rw-border-medium)',
+                          borderRadius: 'var(--rw-radius-lg)',
+                          padding: '9px 12px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: 'var(--rw-text-primary)',
+                          fontFamily: 'var(--rw-font-sans)',
+                          outline: 'none',
+                          cursor: 'pointer',
+                        }}
+                        {...register('cycle_type')}
+                      >
+                        <option value="70h_8d">70 Hours / 8 Days — Property-Carrying Interstate Rule</option>
+                      </select>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px', borderRadius: 'var(--rw-radius-lg)', background: 'var(--rw-accent-subtle)', border: '1px solid var(--rw-accent-border)' }}>
+                        <Info size={13} style={{ color: 'var(--rw-accent-bright)', flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: '11px', color: 'var(--rw-text-secondary)', lineHeight: 1.5 }}>
+                          Enforces 11h drive limit, 14h duty shift, mandatory 30-min rest break, and 10h daily reset automatically.
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
 
-              {/* STEP 3: Pre-Dispatch Trip Summary & Live Estimates */}
-              {activeStep === 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <ShieldCheck size={20} className="text-emerald-400" /> Pre-Dispatch Trip & Compliance Summary
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Live estimated route metrics and HOS compliance predictions</p>
-                    </div>
-                    <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                      Step 3 of 4
-                    </span>
-                  </div>
+                {/* STEP 3: Preview */}
+                {activeStep === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                  >
+                    <SectionHeading
+                      icon={<ShieldCheck size={18} />}
+                      title="Pre-Dispatch Summary"
+                      subtitle="Live estimated metrics and compliance predictions"
+                      color="#22C55E"
+                      step="Step 3 of 4"
+                    />
 
-                  {/* Summary Metric Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-1 text-center shadow-lg">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Est. Distance</span>
-                      <p className="text-xl font-black font-mono text-blue-400">{tripEstimates.estimatedDistance} mi</p>
-                    </div>
-                    <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-1 text-center shadow-lg">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Driving Time</span>
-                      <p className="text-xl font-black font-mono text-indigo-400">{tripEstimates.drivingHours} hrs</p>
-                    </div>
-                    <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-1 text-center shadow-lg">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Duration</span>
-                      <p className="text-xl font-black font-mono text-purple-400">{tripEstimates.totalDurationHours} hrs</p>
-                    </div>
-                    <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 space-y-1 text-center shadow-lg">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Compliance Prediction</span>
-                      <p className="text-xl font-black font-mono text-emerald-400">98% PASS</p>
-                    </div>
-                  </div>
-
-                  {/* Estimated Required Stops Breakdown */}
-                  <div className="bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 space-y-4 shadow-xl">
-                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                      Mandatory HOS Breaks & Rest Stop Predictions
-                    </h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                        <Coffee size={20} className="text-amber-400" />
-                        <div>
-                          <span className="text-xs font-bold text-slate-200">{tripEstimates.restBreaks} Rest Break{tripEstimates.restBreaks !== 1 ? 's' : ''}</span>
-                          <span className="block text-[10px] text-slate-400">Mandatory 30-min stop</span>
+                    {/* Metric cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      {[
+                        { label: 'Est. Distance',   value: `${tripEstimates.estimatedDistance} mi`, color: '#60A5FA' },
+                        { label: 'Driving Time',    value: `${tripEstimates.drivingHours} hrs`,     color: '#818CF8' },
+                        { label: 'Total Duration',  value: `${tripEstimates.totalDurationHours} hrs`, color: '#A78BFA' },
+                        { label: 'HOS Compliance',  value: '98% PASS',                              color: '#4ADE80' },
+                      ].map(({ label, value, color }) => (
+                        <div
+                          key={label}
+                          style={{
+                            background: 'var(--rw-bg-elevated)',
+                            border: '1px solid var(--rw-border)',
+                            borderRadius: 'var(--rw-radius-xl)',
+                            padding: '14px 16px',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <p style={{ fontSize: '9px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                            {label}
+                          </p>
+                          <p style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '18px', fontWeight: 800, color, lineHeight: 1 }}>
+                            {value}
+                          </p>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* HOS Stops */}
+                    <div
+                      style={{
+                        background: 'var(--rw-bg-elevated)',
+                        border: '1px solid var(--rw-border)',
+                        borderRadius: 'var(--rw-radius-2xl)',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                      }}
+                    >
+                      <p style={{ fontSize: '10px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Mandatory HOS Breaks & Stops
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                        {[
+                          { icon: <Coffee size={16} />, color: '#FBBF24', count: tripEstimates.restBreaks,  label: 'Rest Break', sub: '30-min mandatory' },
+                          { icon: <RotateCcw size={16} />, color: '#A78BFA', count: tripEstimates.dailyResets, label: 'Daily Reset', sub: '10-hr off-duty' },
+                          { icon: <Fuel size={16} />, color: '#4ADE80', count: tripEstimates.fuelStops,  label: 'Fuel Stop',  sub: 'Every ~1,000 mi' },
+                        ].map(({ icon, color, count, label, sub }) => (
+                          <div
+                            key={label}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '12px 10px',
+                              borderRadius: 'var(--rw-radius-xl)',
+                              background: 'var(--rw-bg-surface)',
+                              border: '1px solid var(--rw-border)',
+                              textAlign: 'center',
+                            }}
+                          >
+                            <div style={{ color }}>{icon}</div>
+                            <span style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '18px', fontWeight: 800, color, lineHeight: 1 }}>
+                              {count}
+                            </span>
+                            <div>
+                              <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rw-text-secondary)' }}>{label}{count !== 1 ? 's' : ''}</p>
+                              <p style={{ fontSize: '10px', color: 'var(--rw-text-tertiary)', marginTop: 1 }}>{sub}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                        <RotateCcw size={20} className="text-purple-400" />
-                        <div>
-                          <span className="text-xs font-bold text-slate-200">{tripEstimates.dailyResets} Daily Reset{tripEstimates.dailyResets !== 1 ? 's' : ''}</span>
-                          <span className="block text-[10px] text-slate-400">Mandatory 10-hr off-duty</span>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 4: Dispatch */}
+                {activeStep === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                  >
+                    <SectionHeading
+                      icon={<CheckCircle2 size={18} />}
+                      title="Confirm Dispatch"
+                      subtitle="Review all parameters before generating schedule"
+                      color="#3B82F6"
+                      step="Step 4 of 4"
+                    />
+
+                    <div
+                      style={{
+                        borderRadius: 'var(--rw-radius-2xl)',
+                        background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(99,102,241,0.06) 100%)',
+                        border: '1px solid rgba(59,130,246,0.25)',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                      }}
+                    >
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--rw-border)', paddingBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Route size={16} style={{ color: 'var(--rw-accent-bright)' }} />
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Mission Overview
+                          </span>
                         </div>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            color: '#4ADE80',
+                            background: 'rgba(34,197,94,0.1)',
+                            border: '1px solid rgba(34,197,94,0.25)',
+                            borderRadius: 'var(--rw-radius-full)',
+                            padding: '2px 10px',
+                            fontFamily: 'var(--rw-font-mono)',
+                          }}
+                        >
+                          HOS VERIFIED
+                        </span>
                       </div>
-                      <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                        <Fuel size={20} className="text-emerald-400" />
-                        <div>
-                          <span className="text-xs font-bold text-slate-200">{tripEstimates.fuelStops} Fuel Stop{tripEstimates.fuelStops !== 1 ? 's' : ''}</span>
-                          <span className="block text-[10px] text-slate-400">Scheduled every ~1,000 mi</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
 
-              {/* STEP 4: Schedule Generation & Dispatch Confirmation */}
-              {activeStep === 4 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <CheckCircle2 size={20} className="text-blue-400" /> Confirm Freight Dispatch Generation
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Review dispatch details before generating live route polyline and HOS timeline</p>
-                    </div>
-                    <span className="text-xs font-mono text-blue-400 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                      Step 4 of 4
-                    </span>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-blue-950/40 via-slate-900 to-indigo-950/40 border border-blue-500/30 rounded-3xl p-6 space-y-4 shadow-2xl">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mission Overview</span>
-                      <span className="text-xs font-mono text-emerald-400 font-bold">HOS PASS VERIFIED</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Total Highway Distance</span>
-                        <span className="text-slate-100 font-bold text-sm">{tripEstimates.estimatedDistance} miles</span>
+                      {/* Summary grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        {[
+                          { label: 'Highway Distance', value: `${tripEstimates.estimatedDistance} miles` },
+                          { label: 'Total Duration',   value: `${tripEstimates.totalDurationHours} hours` },
+                          { label: 'Required Stops',   value: `${tripEstimates.restBreaks + tripEstimates.dailyResets + tripEstimates.fuelStops}` },
+                          { label: 'Cycle Standard',   value: '70h / 8d FMCSA' },
+                        ].map(({ label, value }) => (
+                          <div key={label}>
+                            <p style={{ fontSize: '9px', fontWeight: 600, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
+                              {label}
+                            </p>
+                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--rw-text-primary)', fontFamily: 'var(--rw-font-mono)' }}>
+                              {value}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Estimated Duration</span>
-                        <span className="text-slate-100 font-bold text-sm">{tripEstimates.totalDurationHours} hours</span>
+
+                      {/* Warning note */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                          padding: '10px 12px',
+                          borderRadius: 'var(--rw-radius-lg)',
+                          background: 'rgba(245,158,11,0.06)',
+                          border: '1px solid rgba(245,158,11,0.2)',
+                        }}
+                      >
+                        <Info size={13} style={{ color: '#FBBF24', flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: '11px', color: '#D4A82B', lineHeight: 1.5 }}>
+                          Submitting will call the planning engine and generate a live HOS timeline with OpenRouteService highway geometry.
+                        </span>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
 
-            {/* Footer Navigation & CTA Buttons */}
-            <div className="p-6 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between gap-4 flex-shrink-0">
+            {/* ── Footer Navigation ── */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '14px 24px',
+                borderTop: '1px solid var(--rw-border)',
+                background: 'rgba(255,255,255,0.015)',
+                flexShrink: 0,
+              }}
+            >
               {activeStep > 1 ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="md"
-                  onClick={() => setActiveStep((s) => (s - 1) as any)}
-                  leftIcon={<ChevronLeft size={18} />}
+                  onClick={() => setActiveStep(s => (s - 1) as any)}
+                  leftIcon={<ChevronLeft size={15} />}
                 >
-                  Previous Step
+                  Back
                 </Button>
               ) : (
                 <Button
@@ -706,28 +1159,83 @@ export function TripPlannerDrawer() {
               )}
 
               {activeStep < 4 ? (
-                <Button
+                <button
                   type="button"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => setActiveStep((s) => (s + 1) as any)}
-                  rightIcon={<ChevronRight size={18} />}
-                  className="bg-blue-600 hover:bg-blue-500 font-bold px-6 shadow-lg shadow-blue-500/30"
+                  onClick={() => setActiveStep(s => (s + 1) as any)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 24px',
+                    borderRadius: 'var(--rw-radius-xl)',
+                    background: 'linear-gradient(135deg, #2563EB, #6366F1)',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(59,130,246,0.4)',
+                    transition: 'all var(--rw-t-normal)',
+                    fontFamily: 'var(--rw-font-sans)',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(59,130,246,0.55)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(59,130,246,0.4)'
+                    ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+                  }}
                 >
-                  Continue to Step {activeStep + 1}
-                </Button>
+                  Continue
+                  <ChevronRight size={15} />
+                </button>
               ) : (
-                <Button
+                <button
                   type="button"
-                  variant="primary"
-                  size="lg"
-                  isLoading={mutation.isPending}
+                  disabled={mutation.isPending}
                   onClick={handleSubmit(onSubmit)}
-                  leftIcon={<CheckCircle2 size={20} />}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold px-8 py-3.5 shadow-xl shadow-blue-500/30 text-sm"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '12px 28px',
+                    borderRadius: 'var(--rw-radius-xl)',
+                    background: mutation.isPending
+                      ? 'var(--rw-bg-elevated)'
+                      : 'linear-gradient(135deg, #059669, #10B981, #22C55E)',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: mutation.isPending ? 'not-allowed' : 'pointer',
+                    boxShadow: mutation.isPending ? 'none' : '0 4px 20px rgba(16,185,129,0.4)',
+                    transition: 'all var(--rw-t-normal)',
+                    opacity: mutation.isPending ? 0.7 : 1,
+                    fontFamily: 'var(--rw-font-sans)',
+                  }}
                 >
-                  Generate Compliant Route Schedule
-                </Button>
+                  {mutation.isPending ? (
+                    <>
+                      <span
+                        style={{
+                          width: 14,
+                          height: 14,
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          borderTop: '2px solid #fff',
+                          borderRadius: '50%',
+                          animation: 'spin 0.6s linear infinite',
+                        }}
+                      />
+                      Generating…
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} />
+                      Generate Compliant Route
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </motion.aside>

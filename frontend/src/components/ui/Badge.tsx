@@ -1,31 +1,34 @@
-import { clsx } from 'clsx'
-import type { EventType, TripStatus, DutyStatus } from '@/api/types'
+import type { EventType, TripStatus } from '@/api/types'
 
-type BadgeVariant = 'driving' | 'rest' | 'fuel' | 'pickup' | 'dropoff' | 'pretrip' | 'reset' | 'compliant' | 'violation' | 'warning' | 'planned' | 'active' | 'completed' | 'cancelled' | 'default'
+type BadgeVariant =
+  | 'driving' | 'rest' | 'fuel' | 'pickup' | 'dropoff'
+  | 'pretrip' | 'reset' | 'compliant' | 'violation' | 'warning'
+  | 'planned' | 'active' | 'completed' | 'cancelled' | 'default'
 
 interface BadgeProps {
   variant?: BadgeVariant
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
   dot?: boolean
 }
 
-const variantMap: Record<BadgeVariant, string> = {
-  driving:   'bg-[--color-driving-bg]   text-[--color-driving]   border-[--color-driving]/20',
-  rest:      'bg-[--color-rest-break-bg] text-[--color-rest-break] border-[--color-rest-break]/20',
-  fuel:      'bg-[--color-fuel-bg]      text-[--color-fuel]      border-[--color-fuel]/20',
-  pickup:    'bg-[--color-pickup-bg]    text-[--color-pickup]    border-[--color-pickup]/20',
-  dropoff:   'bg-[--color-dropoff-bg]   text-[--color-dropoff]   border-[--color-dropoff]/20',
-  pretrip:   'bg-[--color-pretrip-bg]  text-[--color-pretrip]  border-[--color-pretrip]/20',
-  reset:     'bg-[--color-daily-reset-bg] text-[--color-daily-reset] border-[--color-daily-reset]/20',
-  compliant: 'bg-[--color-compliant-bg] text-[--color-compliant] border-[--color-compliant]/20',
-  violation: 'bg-[--color-violation-bg] text-[--color-violation] border-[--color-violation]/20',
-  warning:   'bg-[--color-warning-bg]   text-[--color-warning]   border-[--color-warning]/20',
-  planned:   'bg-[--color-accent-subtle] text-[--color-accent]   border-[--color-accent]/20',
-  active:    'bg-[--color-compliant-bg] text-[--color-compliant] border-[--color-compliant]/20',
-  completed: 'bg-[--color-bg-elevated]  text-[--color-text-secondary] border-[--color-border]',
-  cancelled: 'bg-[--color-violation-bg] text-[--color-violation] border-[--color-violation]/20',
-  default:   'bg-[--color-bg-elevated]  text-[--color-text-secondary] border-[--color-border]',
+const VARIANT_STYLES: Record<BadgeVariant, { color: string; bg: string; border: string }> = {
+  driving:   { color: 'var(--rw-drive)',      bg: 'var(--rw-drive-bg)',      border: 'rgba(59,130,246,0.25)'  },
+  rest:      { color: 'var(--rw-rest)',       bg: 'var(--rw-rest-bg)',       border: 'rgba(245,158,11,0.25)'  },
+  fuel:      { color: 'var(--rw-fuel)',       bg: 'var(--rw-fuel-bg)',       border: 'rgba(16,185,129,0.25)'  },
+  pickup:    { color: 'var(--rw-pickup)',     bg: 'var(--rw-pickup-bg)',     border: 'rgba(6,182,212,0.25)'   },
+  dropoff:   { color: 'var(--rw-dropoff)',    bg: 'var(--rw-dropoff-bg)',    border: 'rgba(249,115,22,0.25)'  },
+  pretrip:   { color: 'var(--rw-pretrip)',    bg: 'var(--rw-pretrip-bg)',    border: 'rgba(99,102,241,0.25)'  },
+  reset:     { color: 'var(--rw-reset)',      bg: 'var(--rw-reset-bg)',      border: 'rgba(139,92,246,0.25)'  },
+  compliant: { color: 'var(--rw-compliant)',  bg: 'var(--rw-compliant-bg)',  border: 'var(--rw-compliant-border)' },
+  violation: { color: 'var(--rw-violation)',  bg: 'var(--rw-violation-bg)',  border: 'var(--rw-violation-border)' },
+  warning:   { color: 'var(--rw-warning)',    bg: 'var(--rw-warning-bg)',    border: 'var(--rw-warning-border)'  },
+  planned:   { color: 'var(--rw-accent)',     bg: 'var(--rw-accent-subtle)', border: 'var(--rw-accent-border)'   },
+  active:    { color: 'var(--rw-compliant)',  bg: 'var(--rw-compliant-bg)',  border: 'var(--rw-compliant-border)' },
+  completed: { color: 'var(--rw-text-secondary)', bg: 'var(--rw-bg-elevated)', border: 'var(--rw-border)' },
+  cancelled: { color: 'var(--rw-violation)',  bg: 'var(--rw-violation-bg)',  border: 'var(--rw-violation-border)' },
+  default:   { color: 'var(--rw-text-secondary)', bg: 'var(--rw-bg-elevated)', border: 'var(--rw-border)' },
 }
 
 export const eventTypeToBadgeVariant = (eventType: EventType): BadgeVariant => {
@@ -49,20 +52,41 @@ export const statusToBadgeVariant = (status: TripStatus): BadgeVariant => {
     COMPLETED: 'completed',
     CANCELLED: 'cancelled',
   }
-  return map[status]
+  return map[status] ?? 'default'
 }
 
-export function Badge({ variant = 'default', children, className, dot }: BadgeProps) {
+export function Badge({ variant = 'default', children, className, style, dot }: BadgeProps) {
+  const s = VARIANT_STYLES[variant]
   return (
     <span
-      className={clsx(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-[--radius-sm] border',
-        variantMap[variant],
-        className
-      )}
+      className={className}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '2px 8px',
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        borderRadius: 'var(--rw-radius-full)',
+        color: s.color,
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
     >
       {dot && (
-        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />
+        <span
+          aria-hidden="true"
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: 'currentColor',
+            flexShrink: 0,
+          }}
+        />
       )}
       {children}
     </span>

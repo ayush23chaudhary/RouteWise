@@ -5,77 +5,184 @@ interface PanelHeaderControlsProps {
   title: string
   icon: React.ReactNode
   badgeText?: string
+  badgeVariant?: 'default' | 'success' | 'warning' | 'danger'
 }
 
-export function PanelHeaderControls({ title, icon, badgeText }: PanelHeaderControlsProps) {
+const BADGE_STYLES: Record<string, { color: string; bg: string; border: string }> = {
+  default: {
+    color: 'var(--rw-accent-bright)',
+    bg: 'var(--rw-accent-subtle)',
+    border: 'var(--rw-accent-border)',
+  },
+  success: {
+    color: 'var(--rw-compliant)',
+    bg: 'var(--rw-compliant-bg)',
+    border: 'var(--rw-compliant-border)',
+  },
+  warning: {
+    color: 'var(--rw-warning)',
+    bg: 'var(--rw-warning-bg)',
+    border: 'var(--rw-warning-border)',
+  },
+  danger: {
+    color: 'var(--rw-violation)',
+    bg: 'var(--rw-violation-bg)',
+    border: 'var(--rw-violation-border)',
+  },
+}
+
+export function PanelHeaderControls({
+  title,
+  icon,
+  badgeText,
+  badgeVariant = 'default',
+}: PanelHeaderControlsProps) {
   const { panelMode, setPanelMode, toggleExpanded, toggleFullscreen, setActivePanel } = useUIStore()
+  const badgeStyle = BADGE_STYLES[badgeVariant]
 
   return (
-    <div className="flex items-center justify-between h-13 px-4 border-b border-slate-800/80 bg-slate-900/80 flex-shrink-0 backdrop-blur-xl">
-      <div className="flex items-center gap-3">
-        <div className="text-blue-400 flex items-center justify-center">
+    <div
+      className="flex items-center justify-between px-4 flex-shrink-0"
+      style={{
+        height: 'var(--rw-nav-h)',
+        background: 'rgba(10, 12, 16, 0.6)',
+        borderBottom: '1px solid var(--rw-border)',
+      }}
+    >
+      {/* Left: Icon + Title + Badge */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div
+          className="flex items-center justify-center flex-shrink-0"
+          style={{ color: 'var(--rw-accent-bright)', width: 20, height: 20 }}
+        >
           {icon}
         </div>
-        <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+        <h2
+          className="font-bold uppercase tracking-wider truncate"
+          style={{ fontSize: '11px', letterSpacing: '0.08em', color: 'var(--rw-text-primary)' }}
+        >
           {title}
         </h2>
         {badgeText && (
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30">
+          <span
+            className="font-mono flex-shrink-0"
+            style={{
+              fontSize: '10px',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 'var(--rw-radius-full)',
+              color: badgeStyle.color,
+              background: badgeStyle.bg,
+              border: `1px solid ${badgeStyle.border}`,
+            }}
+          >
             {badgeText}
           </span>
         )}
       </div>
 
-      {/* Adaptive Mode Controls */}
-      <div className="flex items-center gap-1">
-        {/* Toggle Expanded (~70% width) */}
-        <button
+      {/* Right: Window Controls */}
+      <div className="flex items-center gap-0.5" role="toolbar" aria-label="Panel controls">
+        <PanelControlButton
           onClick={toggleExpanded}
-          className={`p-1.5 rounded-xl transition-all ${
-            panelMode === 'expanded'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-          }`}
-          title={panelMode === 'expanded' ? 'Restore Normal Width (380px)' : 'Expand Panel (70% Width)'}
+          isActive={panelMode === 'expanded'}
+          activeColor="#3B82F6"
+          title={panelMode === 'expanded' ? 'Restore width' : 'Expand panel'}
+          aria-label={panelMode === 'expanded' ? 'Restore normal width' : 'Expand panel'}
         >
-          {panelMode === 'expanded' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-        </button>
+          {panelMode === 'expanded' ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+        </PanelControlButton>
 
-        {/* Toggle Pop-out Focus Mode */}
-        <button
+        <PanelControlButton
           onClick={() => setPanelMode(panelMode === 'popout' ? 'normal' : 'popout')}
-          className={`p-1.5 rounded-xl transition-all ${
-            panelMode === 'popout'
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-          }`}
-          title={panelMode === 'popout' ? 'Restore Sidebar' : 'Pop-out Focus Mode'}
+          isActive={panelMode === 'popout'}
+          activeColor="#8B5CF6"
+          title={panelMode === 'popout' ? 'Restore sidebar' : 'Pop-out focus mode'}
+          aria-label={panelMode === 'popout' ? 'Restore sidebar' : 'Pop-out focus mode'}
         >
-          <ExternalLink size={16} />
-        </button>
+          <ExternalLink size={14} />
+        </PanelControlButton>
 
-        {/* Toggle Fullscreen (Hotkey: F) */}
-        <button
+        <PanelControlButton
           onClick={toggleFullscreen}
-          className={`p-1.5 rounded-xl transition-all ${
-            panelMode === 'fullscreen'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-          }`}
-          title={panelMode === 'fullscreen' ? 'Exit Fullscreen (ESC)' : 'Fullscreen Overlay (F)'}
+          isActive={panelMode === 'fullscreen'}
+          activeColor="#22C55E"
+          title={panelMode === 'fullscreen' ? 'Exit fullscreen (Esc)' : 'Fullscreen (F)'}
+          aria-label={panelMode === 'fullscreen' ? 'Exit fullscreen' : 'Fullscreen overlay'}
         >
-          <Maximize size={16} />
-        </button>
+          <Maximize size={14} />
+        </PanelControlButton>
 
-        {/* Close Panel */}
-        <button
+        <div
+          className="ml-1"
+          style={{ width: '1px', height: '16px', background: 'var(--rw-border)' }}
+          aria-hidden="true"
+        />
+
+        <PanelControlButton
           onClick={() => setActivePanel(null)}
-          className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors ml-1"
-          title="Close Panel"
+          title="Close panel"
+          aria-label="Close panel"
         >
-          <X size={16} />
-        </button>
+          <X size={14} />
+        </PanelControlButton>
       </div>
     </div>
+  )
+}
+
+function PanelControlButton({
+  children,
+  onClick,
+  isActive,
+  activeColor,
+  title,
+  ...rest
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  isActive?: boolean
+  activeColor?: string
+  title?: string
+  [key: string]: any
+}) {
+  const baseStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '28px',
+    height: '28px',
+    borderRadius: 'var(--rw-radius-md)',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all var(--rw-t-fast)',
+    color: isActive ? '#fff' : 'var(--rw-text-tertiary)',
+    background: isActive && activeColor
+      ? `${activeColor}22`
+      : 'transparent',
+    outline: 'none',
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      style={baseStyle}
+      title={title}
+      onMouseEnter={e => {
+        if (!isActive) {
+          (e.currentTarget as HTMLButtonElement).style.color = 'var(--rw-text-primary)'
+          ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--rw-bg-hover)'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isActive) {
+          (e.currentTarget as HTMLButtonElement).style.color = 'var(--rw-text-tertiary)'
+          ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+        }
+      }}
+      {...rest}
+    >
+      {children}
+    </button>
   )
 }

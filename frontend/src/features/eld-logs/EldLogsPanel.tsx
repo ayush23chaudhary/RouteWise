@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { FileText, ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react'
+import { FileText, ChevronLeft, ChevronRight, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { fetchLogs } from '@/api/trips'
@@ -9,29 +9,33 @@ import type { DailyLog, DutyStatus } from '@/api/types'
 import { PanelHeaderControls } from '@/components/layout/PanelHeaderControls'
 
 const DUTY_ROW: Record<DutyStatus, number> = { OFF: 0, SB: 1, D: 2, ON: 3 }
-const DUTY_COLORS: Record<DutyStatus, string> = {
-  OFF: 'var(--color-text-tertiary)',
-  SB:  '#8B5CF6',
-  D:   '#3B82F6',
-  ON:  '#06B6D4',
+
+const DUTY_STYLES: Record<DutyStatus, { color: string; label: string; trackColor: string }> = {
+  OFF: { color: '#64748B', label: 'Off Duty',        trackColor: 'rgba(100,116,139,0.15)' },
+  SB:  { color: '#A78BFA', label: 'Sleeper Berth',   trackColor: 'rgba(167,139,250,0.12)' },
+  D:   { color: '#60A5FA', label: 'Driving',          trackColor: 'rgba(96,165,250,0.12)'  },
+  ON:  { color: '#22D3EE', label: 'On Duty (Not D.)', trackColor: 'rgba(34,211,238,0.12)'  },
 }
+
 const DUTY_LABELS: DutyStatus[] = ['OFF', 'SB', 'D', 'ON']
 
 function EldGrid({ intervals = [] }: { intervals?: DutyStatus[] }) {
-  const SVG_W = 320
-  const SVG_H = 80
-  const LEFT  = 28
-  const TOP   = 8
-  const GRID_W = SVG_W - LEFT - 8
-  const ROW_H  = (SVG_H - TOP - 8) / 4
+  const SVG_W = 340
+  const SVG_H = 92
+  const LEFT  = 32
+  const TOP   = 6
+  const GRID_W = SVG_W - LEFT - 6
+  const ROW_H  = (SVG_H - TOP - 14) / 4
   const CELL_W = GRID_W / 96
+  const HOUR_W = GRID_W / 24
 
-  const safeIntervals = intervals.length === 96 ? intervals : Array(96).fill('OFF' as DutyStatus)
+  const safeIntervals: DutyStatus[] =
+    intervals.length === 96 ? intervals : Array(96).fill('OFF' as DutyStatus)
 
+  // Build fill rects
   const rects: { x: number; w: number; status: DutyStatus }[] = []
   let prevStatus = safeIntervals[0]
   let startIdx = 0
-
   for (let i = 1; i <= safeIntervals.length; i++) {
     if (i === safeIntervals.length || safeIntervals[i] !== prevStatus) {
       rects.push({ x: startIdx * CELL_W, w: (i - startIdx) * CELL_W, status: prevStatus })
@@ -39,100 +43,102 @@ function EldGrid({ intervals = [] }: { intervals?: DutyStatus[] }) {
     }
   }
 
-  // Construct continuous ELD stepped line path
+  // Stepped ELD path
   let pathD = ''
   safeIntervals.forEach((status, idx) => {
-    const duty = status as DutyStatus
     const x1 = LEFT + idx * CELL_W
     const x2 = LEFT + (idx + 1) * CELL_W
-    const y = TOP + (DUTY_ROW[duty] ?? 0) * ROW_H + ROW_H / 2
-
+    const y = TOP + DUTY_ROW[status] * ROW_H + ROW_H / 2
     if (idx === 0) {
       pathD += `M ${x1} ${y} L ${x2} ${y}`
     } else {
-      const prevDuty = safeIntervals[idx - 1] as DutyStatus
-      const prevY = TOP + (DUTY_ROW[prevDuty] ?? 0) * ROW_H + ROW_H / 2
-      if (prevY !== y) {
-        pathD += ` L ${x1} ${y} L ${x2} ${y}`
-      } else {
-        pathD += ` L ${x2} ${y}`
-      }
+      const prevDuty = safeIntervals[idx - 1]
+      const prevY = TOP + DUTY_ROW[prevDuty] * ROW_H + ROW_H / 2
+      pathD += prevY !== y ? ` L ${x1} ${y} L ${x2} ${y}` : ` L ${x2} ${y}`
     }
   })
 
-
   return (
-    <div className="px-4 py-3" aria-label="ELD 24-hour grid" role="img">
-      <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="overflow-visible">
-        {/* Background Grid Horizontal Lines */}
+    <div
+      style={{ padding: '12px 10px 6px', background: 'var(--rw-bg-void)', borderRadius: 'var(--rw-radius-lg)', margin: '0' }}
+      aria-label="ELD 24-hour duty grid"
+      role="img"
+    >
+      <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ overflow: 'visible', display: 'block' }}>
+        {/* Horizontal grid lines */}
         {[0, 1, 2, 3, 4].map(i => (
           <line
             key={`h-${i}`}
             x1={LEFT} y1={TOP + i * ROW_H}
             x2={LEFT + GRID_W} y2={TOP + i * ROW_H}
-            stroke="#1E293B"
-            strokeWidth={0.75}
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={i === 0 || i === 4 ? 0.8 : 0.4}
           />
         ))}
 
-        {/* Hour Vertical Lines */}
+        {/* Hour vertical marks */}
         {Array.from({ length: 25 }).map((_, h) => (
           <g key={h}>
             <line
-              x1={LEFT + h * (GRID_W / 24)} y1={TOP}
-              x2={LEFT + h * (GRID_W / 24)} y2={TOP + 4 * ROW_H}
-              stroke="#1E293B"
-              strokeWidth={h % 6 === 0 ? 1 : 0.4}
+              x1={LEFT + h * HOUR_W} y1={TOP}
+              x2={LEFT + h * HOUR_W} y2={TOP + 4 * ROW_H}
+              stroke={h % 6 === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)'}
+              strokeWidth={h % 6 === 0 ? 0.8 : 0.35}
             />
             {h % 6 === 0 && (
               <text
-                x={LEFT + h * (GRID_W / 24)}
-                y={TOP + 4 * ROW_H + 11}
+                x={LEFT + h * HOUR_W}
+                y={TOP + 4 * ROW_H + 12}
                 textAnchor="middle"
-                fontSize={7}
-                fill="#64748B"
+                fontSize={8}
+                fill="rgba(255,255,255,0.3)"
                 fontFamily="JetBrains Mono, monospace"
-              >{String(h).padStart(2, '0')}</text>
+              >
+                {String(h).padStart(2, '0')}
+              </text>
             )}
           </g>
         ))}
 
-        {/* Row Labels */}
+        {/* Row labels */}
         {DUTY_LABELS.map((d, i) => (
           <text
             key={d}
-            x={LEFT - 5}
-            y={TOP + i * ROW_H + ROW_H / 2 + 3}
+            x={LEFT - 4}
+            y={TOP + i * ROW_H + ROW_H / 2 + 3.5}
             textAnchor="end"
             fontSize={8}
-            fill="#94A3B8"
-            fontWeight={600}
+            fill={DUTY_STYLES[d].color}
+            fontWeight={700}
             fontFamily="JetBrains Mono, monospace"
-          >{d}</text>
+          >
+            {d}
+          </text>
         ))}
 
-        {/* Colored Status Blocks */}
+        {/* Colored fill blocks */}
         {rects.map(({ x, w, status }, i) => (
           <rect
             key={i}
             x={LEFT + x}
-            y={TOP + DUTY_ROW[status] * ROW_H + 1}
+            y={TOP + DUTY_ROW[status] * ROW_H + 1.5}
             width={w}
-            height={ROW_H - 2}
-            fill={DUTY_COLORS[status]}
-            opacity={0.35}
-            rx={1}
+            height={ROW_H - 3}
+            fill={DUTY_STYLES[status].color}
+            opacity={0.25}
+            rx={1.5}
           />
         ))}
 
-        {/* Stepped ELD Duty Line Path */}
+        {/* ELD stepped duty line */}
         <path
           d={pathD}
           fill="none"
           stroke="#60A5FA"
-          strokeWidth={2.2}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
+          style={{ filter: 'drop-shadow(0 0 3px rgba(96,165,250,0.5))' }}
         />
       </svg>
     </div>
@@ -149,30 +155,99 @@ function LogCard({ log }: { log: any }) {
   const dateStr = log.log_date || log.date || new Date().toISOString()
   const dateObj = new Date(dateStr)
   const formattedDate = isNaN(dateObj.getTime()) ? 'Daily Log' : format(dateObj, 'EEEE, MMMM d, yyyy')
+  const dayOfWeek = isNaN(dateObj.getTime()) ? '' : format(dateObj, 'EEE')
 
-  const offDutySec = log.off_duty_seconds ?? ((log.duty_hours?.OFF ?? 0) * 3600)
-  const sleeperSec = log.sleeper_berth_seconds ?? ((log.duty_hours?.SB ?? 0) * 3600)
-  const drivingSec = log.driving_seconds ?? ((log.duty_hours?.D ?? 0) * 3600)
-  const onDutySec  = log.on_duty_seconds ?? ((log.duty_hours?.ON ?? 0) * 3600)
+  const offDutySec = log.off_duty_seconds     ?? ((log.duty_hours?.OFF ?? 0) * 3600)
+  const sleeperSec = log.sleeper_berth_seconds ?? ((log.duty_hours?.SB  ?? 0) * 3600)
+  const drivingSec = log.driving_seconds        ?? ((log.duty_hours?.D   ?? 0) * 3600)
+  const onDutySec  = log.on_duty_seconds        ?? ((log.duty_hours?.ON  ?? 0) * 3600)
+  const totalSec   = offDutySec + sleeperSec + drivingSec + onDutySec
+  const drivingPct = totalSec > 0 ? Math.round((drivingSec / 86400) * 100) : 0
+
+  const summaryItems = [
+    { key: 'OFF', label: 'OFF',  value: offDutySec, color: DUTY_STYLES.OFF.color },
+    { key: 'SB',  label: 'SB',  value: sleeperSec, color: DUTY_STYLES.SB.color  },
+    { key: 'D',   label: 'D',   value: drivingSec, color: DUTY_STYLES.D.color   },
+    { key: 'ON',  label: 'ON',  value: onDutySec,  color: DUTY_STYLES.ON.color  },
+  ]
 
   return (
-    <div className="border border-slate-700/70 rounded-xl bg-slate-900/90 overflow-hidden shadow-lg">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">
-        <p className="text-xs font-bold text-slate-200">
-          {formattedDate}
-        </p>
+    <div
+      style={{
+        borderRadius: 'var(--rw-radius-2xl)',
+        background: 'var(--rw-bg-elevated)',
+        border: '1px solid var(--rw-border)',
+        overflow: 'hidden',
+        boxShadow: 'var(--rw-shadow-md)',
+      }}
+    >
+      {/* Card Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          background: 'rgba(255,255,255,0.02)',
+          borderBottom: '1px solid var(--rw-border)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 'var(--rw-radius-lg)',
+              background: 'var(--rw-accent-subtle)',
+              border: '1px solid var(--rw-accent-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--rw-accent-bright)', lineHeight: 1 }}>
+              {dayOfWeek.toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)', lineHeight: 1.3 }}>
+              {formattedDate}
+            </p>
+            <p style={{ fontSize: '10px', color: 'var(--rw-text-tertiary)', fontFamily: 'var(--rw-font-mono)', marginTop: 1 }}>
+              Driving {drivingPct}% of 24h window
+            </p>
+          </div>
+        </div>
       </div>
+
+      {/* ELD Grid */}
       <EldGrid intervals={log.grid_intervals} />
-      <div className="grid grid-cols-4 divide-x divide-slate-800 border-t border-slate-800">
-        {[
-          { label: 'OFF',  value: offDutySec, color: '#94A3B8' },
-          { label: 'SB',   value: sleeperSec, color: '#8B5CF6' },
-          { label: 'D',    value: drivingSec, color: '#3B82F6' },
-          { label: 'ON',   value: onDutySec,  color: '#06B6D4' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="py-2.5 text-center">
-            <p className="text-[10px] font-bold mb-0.5" style={{ color }}>{label}</p>
-            <p className="text-[11px] text-slate-200 font-mono font-semibold">{formatSeconds(value)}</p>
+
+      {/* Duty Time Summary */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          borderTop: '1px solid var(--rw-border)',
+        }}
+      >
+        {summaryItems.map(({ key, label, value, color }, i) => (
+          <div
+            key={key}
+            style={{
+              padding: '10px 8px',
+              textAlign: 'center',
+              borderRight: i < 3 ? '1px solid var(--rw-border)' : 'none',
+            }}
+          >
+            <p style={{ fontSize: '10px', fontWeight: 700, color, marginBottom: 3, letterSpacing: '0.05em' }}>
+              {label}
+            </p>
+            <p style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '11px', fontWeight: 600, color: 'var(--rw-text-secondary)' }}>
+              {formatSeconds(value)}
+            </p>
           </div>
         ))}
       </div>
@@ -183,7 +258,6 @@ function LogCard({ log }: { log: any }) {
 export function EldLogsPanel() {
   const { activeTrip } = useTripStore()
   const [logIndex, setLogIndex] = useState(0)
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['logs', activeTrip?.id],
@@ -194,73 +268,167 @@ export function EldLogsPanel() {
 
   const displayLogs = logs ?? activeTrip?.daily_logs ?? []
   const currentLog = displayLogs[logIndex]
+  const hasMultiple = displayLogs.length > 1
 
   return (
-    <div className="flex flex-col h-full bg-slate-950/95 backdrop-blur-xl text-slate-100">
+    <div
+      className="flex flex-col h-full"
+      style={{ background: 'transparent', color: 'var(--rw-text-primary)' }}
+    >
       <PanelHeaderControls
-        title="FMCSA ELD Daily Logs"
-        icon={<FileText size={18} />}
-        badgeText={`${displayLogs.length} Days`}
+        title="FMCSA ELD Logs"
+        icon={<FileText size={16} />}
+        badgeText={`${displayLogs.length} Day${displayLogs.length !== 1 ? 's' : ''}`}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto" style={{ padding: '12px' }}>
         {isLoading ? (
-          <SkeletonText lines={5} />
+          <SkeletonText lines={6} />
         ) : displayLogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-            <FileText size={36} className="text-slate-700 mb-3" />
-            <p className="text-sm font-medium text-slate-400">No ELD logs available</p>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              textAlign: 'center',
+              padding: '48px 24px',
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 'var(--rw-radius-xl)',
+                background: 'var(--rw-bg-elevated)',
+                border: '1px solid var(--rw-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <FileText size={20} style={{ color: 'var(--rw-text-tertiary)' }} />
+            </div>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rw-text-secondary)', marginBottom: 6 }}>
+              No ELD logs available
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--rw-text-tertiary)', lineHeight: 1.5 }}>
+              Complete a trip plan to generate official FMCSA ELD records
+            </p>
           </div>
         ) : (
-          <>
-            {displayLogs.length > 1 && (
-              <div className="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Day Navigator */}
+            {hasMultiple && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--rw-radius-xl)',
+                  background: 'var(--rw-bg-elevated)',
+                  border: '1px solid var(--rw-border)',
+                }}
+              >
                 <button
                   disabled={logIndex === 0}
                   onClick={() => setLogIndex(i => i - 1)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:pointer-events-none"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 'var(--rw-radius-md)',
+                    background: logIndex === 0 ? 'transparent' : 'var(--rw-bg-hover)',
+                    border: '1px solid var(--rw-border)',
+                    color: logIndex === 0 ? 'var(--rw-text-disabled)' : 'var(--rw-text-secondary)',
+                    cursor: logIndex === 0 ? 'not-allowed' : 'pointer',
+                    transition: 'all var(--rw-t-fast)',
+                  }}
+                  aria-label="Previous day"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={14} />
                 </button>
-                <span className="text-xs font-bold text-slate-300 font-mono">
-                  Day {logIndex + 1} of {displayLogs.length}
-                </span>
+
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)' }}>
+                    Day {logIndex + 1}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--rw-text-tertiary)', margin: '0 4px' }}>of</span>
+                  <span style={{ fontFamily: 'var(--rw-font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)' }}>
+                    {displayLogs.length}
+                  </span>
+                </div>
+
                 <button
                   disabled={logIndex === displayLogs.length - 1}
                   onClick={() => setLogIndex(i => i + 1)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:pointer-events-none"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 'var(--rw-radius-md)',
+                    background: logIndex === displayLogs.length - 1 ? 'transparent' : 'var(--rw-bg-hover)',
+                    border: '1px solid var(--rw-border)',
+                    color: logIndex === displayLogs.length - 1 ? 'var(--rw-text-disabled)' : 'var(--rw-text-secondary)',
+                    cursor: logIndex === displayLogs.length - 1 ? 'not-allowed' : 'pointer',
+                    transition: 'all var(--rw-t-fast)',
+                  }}
+                  aria-label="Next day"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={14} />
                 </button>
               </div>
             )}
 
+            {/* Log Card */}
             {currentLog && <LogCard log={currentLog} />}
-          </>
+
+            {/* Legend */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 6,
+              }}
+            >
+              {(Object.entries(DUTY_STYLES) as [DutyStatus, typeof DUTY_STYLES[DutyStatus]][]).map(([key, style]) => (
+                <div
+                  key={key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    borderRadius: 'var(--rw-radius-md)',
+                    background: 'var(--rw-bg-elevated)',
+                    border: '1px solid var(--rw-border)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      background: style.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--rw-text-secondary)', fontWeight: 500 }}>
+                    {style.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Fullscreen Modal */}
-      {isFullscreen && currentLog && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-4xl w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <FileText size={20} className="text-blue-400" />
-                <h3 className="text-base font-bold text-slate-100">Official FMCSA 24-Hour ELD Log</h3>
-              </div>
-              <button
-                onClick={() => setIsFullscreen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <LogCard log={currentLog} />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

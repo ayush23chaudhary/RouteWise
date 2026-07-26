@@ -531,7 +531,24 @@ export function MapWorkspace() {
       <div ref={mapContainer} className="absolute inset-0 z-0" />
 
       {/* Floating Map Style Control */}
-      <div className="absolute top-4 right-4 z-20 flex items-center bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl gap-1">
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 3,
+          padding: 4,
+          background: 'rgba(6,7,9,0.88)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 'var(--rw-radius-xl)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+        }}
+      >
         {activeStyles.map((style) => {
           const Icon = style.icon
           const isActive = currentStyleId === style.id
@@ -540,14 +557,39 @@ export function MapWorkspace() {
               key={style.id}
               onClick={() => switchMapStyle(style.id)}
               title={style.label}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 11px',
+                borderRadius: 'var(--rw-radius-lg)',
+                border: isActive ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent',
+                background: isActive
+                  ? 'linear-gradient(135deg, #2563EB, #6366F1)'
+                  : 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                boxShadow: isActive ? '0 2px 10px rgba(59,130,246,0.4)' : 'none',
+                fontFamily: 'var(--rw-font-sans)',
+              }}
+              onMouseEnter={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.8)'
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)'
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                }
+              }}
             >
-              <Icon size={14} />
-              <span className="hidden sm:inline">{style.label.split(' ')[0]}</span>
+              <Icon size={12} />
+              <span>{style.label.split(' ')[0]}</span>
             </button>
           )
         })}
