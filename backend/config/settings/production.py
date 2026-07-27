@@ -8,6 +8,9 @@ ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").sp
 
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()]
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://route-wise-.*\.vercel\.app$",
+]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True").lower() in ("true", "1")
 SESSION_COOKIE_SECURE = True
