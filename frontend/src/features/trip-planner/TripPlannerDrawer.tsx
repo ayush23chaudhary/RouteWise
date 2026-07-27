@@ -445,9 +445,9 @@ function FreightLocationCard({
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 12, fontSize: '11px', fontFamily: 'var(--rw-font-mono)', color: 'var(--rw-text-tertiary)' }}>
-          <span>Lat: {currentLat != null && currentLat !== '' && !isNaN(Number(currentLat)) ? Number(currentLat).toFixed(4) : '—'}</span>
+          <span>Lat: {currentLat != null && String(currentLat) !== '' && !isNaN(Number(currentLat)) ? Number(currentLat).toFixed(4) : '—'}</span>
           <span>·</span>
-          <span>Lng: {currentLng != null && currentLng !== '' && !isNaN(Number(currentLng)) ? Number(currentLng).toFixed(4) : '—'}</span>
+          <span>Lng: {currentLng != null && String(currentLng) !== '' && !isNaN(Number(currentLng)) ? Number(currentLng).toFixed(4) : '—'}</span>
         </div>
       )}
 
