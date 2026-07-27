@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -25,6 +25,8 @@ import {
   Calendar,
   Info,
   Route,
+  Search,
+  Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { tripPlanSchema, type TripPlanFormValues } from './schema'
@@ -178,16 +180,51 @@ function FreightLocationCard({
   const currentLat = watch(`${prefix}.latitude`)
   const currentLng = watch(`${prefix}.longitude`)
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null)
+
   const matchedHub = useMemo(() =>
     FREIGHT_HUBS.find(h => Math.abs(h.lat - currentLat) < 0.05 && Math.abs(h.lng - currentLng) < 0.05),
     [currentLat, currentLng]
   )
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 3) {
+      setSuggestions([])
+      return
+    }
+    const delayDebounceFn = setTimeout(() => {
+      setIsSearching(true)
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`)
+        .then(res => res.json())
+        .then(data => {
+          setSuggestions(data || [])
+          setIsSearching(false)
+        })
+        .catch(err => {
+          console.error("Geocoding error", err)
+          setIsSearching(false)
+        })
+    }, 500)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchQuery])
+
+  const handleSuggestionSelect = (place: any) => {
+    setValue(`${prefix}.latitude`, parseFloat(place.lat), { shouldValidate: true })
+    setValue(`${prefix}.longitude`, parseFloat(place.lon), { shouldValidate: true })
+    setSelectedPlaceName(place.display_name)
+    setSearchQuery('')
+    setSuggestions([])
+  }
 
   const handleHubSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const hub = FREIGHT_HUBS.find(h => h.id === e.target.value)
     if (hub) {
       setValue(`${prefix}.latitude`, hub.lat, { shouldValidate: true })
       setValue(`${prefix}.longitude`, hub.lng, { shouldValidate: true })
+      setSelectedPlaceName(null)
     }
   }
 
@@ -277,39 +314,114 @@ function FreightLocationCard({
         </button>
       </div>
 
-      {/* Hub Selector */}
-      <div>
-        <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rw-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 6 }}>
-          Commercial Freight Terminal
-        </label>
+      {/* Search Input */}
+      <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--rw-text-tertiary)' }} />
+          <input
+            type="text"
+            placeholder="Search for a city or address..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'var(--rw-bg-surface)',
+              border: '1px solid var(--rw-border-medium)',
+              borderRadius: 'var(--rw-radius-lg)',
+              padding: '9px 12px 9px 32px',
+              fontSize: '13px',
+              color: 'var(--rw-text-primary)',
+              fontFamily: 'var(--rw-font-sans)',
+              outline: 'none',
+            }}
+          />
+          {isSearching && (
+            <Loader2 size={14} className="animate-spin" style={{ position: 'absolute', right: 10, color: 'var(--rw-text-tertiary)' }} />
+          )}
+        </div>
+
+        {/* Suggestions Dropdown */}
+        <AnimatePresence>
+          {suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: 4,
+                background: 'var(--rw-bg-elevated)',
+                border: '1px solid var(--rw-border-medium)',
+                borderRadius: 'var(--rw-radius-lg)',
+                boxShadow: 'var(--rw-shadow-lg)',
+                zIndex: 50,
+                maxHeight: 200,
+                overflowY: 'auto',
+              }}
+            >
+              {suggestions.map((place: any, i) => (
+                <div
+                  key={i}
+                  onClick={() => handleSuggestionSelect(place)}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    color: 'var(--rw-text-secondary)',
+                    cursor: 'pointer',
+                    borderBottom: i < suggestions.length - 1 ? '1px solid var(--rw-border)' : 'none',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--rw-bg-surface)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  {place.display_name}
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Hub Selector (Optional Fallback) */}
+      <div style={{ display: 'none' }}>
         <select
           value={matchedHub?.id || ''}
           onChange={handleHubSelect}
-          style={{
-            width: '100%',
-            background: 'var(--rw-bg-surface)',
-            border: '1px solid var(--rw-border-medium)',
-            borderRadius: 'var(--rw-radius-lg)',
-            padding: '9px 12px',
-            fontSize: '13px',
-            fontWeight: 600,
-            color: 'var(--rw-text-primary)',
-            fontFamily: 'var(--rw-font-sans)',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
+          style={{ width: '100%' }}
         >
           <option value="">— Select a freight terminal —</option>
           {FREIGHT_HUBS.map(hub => (
-            <option key={hub.id} value={hub.id}>
-              {hub.name} · {hub.city}
-            </option>
+            <option key={hub.id} value={hub.id}>{hub.name}</option>
           ))}
         </select>
       </div>
 
       {/* Selected location summary */}
-      {matchedHub ? (
+      {selectedPlaceName ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 'var(--rw-radius-lg)',
+            background: `${accentColor}08`,
+            border: `1px solid ${accentColor}25`,
+          }}
+        >
+          <MapPin size={14} style={{ color: accentColor, flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rw-text-primary)', lineHeight: 1.3 }}>
+              Selected Location
+            </p>
+            <p style={{ fontSize: '11px', color: 'var(--rw-text-tertiary)', marginTop: 2 }}>
+              {selectedPlaceName}
+            </p>
+          </div>
+        </div>
+      ) : matchedHub ? (
         <div
           style={{
             display: 'flex',
@@ -333,9 +445,9 @@ function FreightLocationCard({
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 12, fontSize: '11px', fontFamily: 'var(--rw-font-mono)', color: 'var(--rw-text-tertiary)' }}>
-          <span>Lat: {currentLat ? currentLat.toFixed(4) : '—'}</span>
+          <span>Lat: {currentLat != null && currentLat !== '' && !isNaN(Number(currentLat)) ? Number(currentLat).toFixed(4) : '—'}</span>
           <span>·</span>
-          <span>Lng: {currentLng ? currentLng.toFixed(4) : '—'}</span>
+          <span>Lng: {currentLng != null && currentLng !== '' && !isNaN(Number(currentLng)) ? Number(currentLng).toFixed(4) : '—'}</span>
         </div>
       )}
 
@@ -389,6 +501,7 @@ function FreightLocationCard({
     </div>
   )
 }
+
 
 // ── Main TripPlannerDrawer ────────────────────────────────────────────────────
 export function TripPlannerDrawer() {
@@ -613,15 +726,27 @@ export function TripPlannerDrawer() {
       })
 
       if (startCoord) flyTo([startCoord.longitude, startCoord.latitude], 5)
-      toast.success('FMCSA compliant route calculated!', {
-        icon: '✅',
-        style: {
-          background: 'var(--rw-bg-elevated)',
-          color: 'var(--rw-text-primary)',
-          border: '1px solid var(--rw-border)',
-          fontSize: '0.8125rem',
-        },
-      })
+      if (data?.is_route_fallback) {
+        toast.error('OpenRouteService failed to fetch route. Falling back to Haversine road estimation.', {
+          icon: '⚠️',
+          style: {
+            background: 'var(--rw-bg-elevated)',
+            color: '#F59E0B',
+            border: '1px solid #F59E0B',
+            fontSize: '0.8125rem',
+          },
+        })
+      } else {
+        toast.success('FMCSA compliant route calculated!', {
+          icon: '✅',
+          style: {
+            background: 'var(--rw-bg-elevated)',
+            color: 'var(--rw-text-primary)',
+            border: '1px solid var(--rw-border)',
+            fontSize: '0.8125rem',
+          },
+        })
+      }
       setIsPlannerOpen(false)
       setActiveStep(1)
       setIsFocusMode(false)

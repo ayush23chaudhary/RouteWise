@@ -25,6 +25,7 @@ class Trip:
     total_distance_miles: float = 0.0
     total_duration_hours: float = 0.0
     route_geometry: list[list[float]] = field(default_factory=list)
+    is_route_fallback: bool = False
 
     def add_waypoint(self, waypoint: Waypoint) -> None:
         self.waypoints.append(waypoint)

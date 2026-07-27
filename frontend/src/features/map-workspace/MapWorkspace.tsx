@@ -96,9 +96,9 @@ const RASTER_STYLES = [
         'osm-tiles': {
           type: 'raster',
           tiles: [
-            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png?v=1',
+            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png?v=1',
+            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png?v=1',
           ],
           tileSize: 256,
           attribution: '&copy; OpenStreetMap contributors',

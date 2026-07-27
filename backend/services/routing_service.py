@@ -133,6 +133,7 @@ class GeospatialRoutingService(IRoutingService):
             "coordinates": coords,
             "distance_miles": round(distance_meters * self.METERS_TO_MILES, 2),
             "duration_seconds": int(duration_seconds),
+            "is_fallback": False,
         }
 
     def _calculate_haversine_fallback(self, coordinates: list[Coordinates]) -> dict[str, Any]:
@@ -158,6 +159,7 @@ class GeospatialRoutingService(IRoutingService):
             "coordinates": route_coords,
             "distance_miles": round(total_distance_miles, 2),
             "duration_seconds": duration_seconds,
+            "is_fallback": True,
         }
 
     @staticmethod

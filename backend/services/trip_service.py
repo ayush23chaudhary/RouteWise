@@ -97,6 +97,7 @@ class TripService:
         trip.total_distance_miles = route_info.get("distance_miles", 0.0)
         trip.total_duration_hours = route_info.get("duration_seconds", 0) / 3600.0
         trip.route_geometry = route_info.get("coordinates", [])
+        trip.is_route_fallback = route_info.get("is_fallback", False)
 
         planned_trip = self.scheduling_engine.generate_schedule(trip)
         val_result = self.validation_engine.validate_trip(planned_trip)

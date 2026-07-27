@@ -58,6 +58,7 @@ class TripPlanResponseSerializer(serializers.Serializer):
     waypoints = WaypointResponseSerializer(many=True)
     events = ScheduleEventResponseSerializer(many=True)
     daily_logs = DailyLogResponseSerializer(many=True)
+    is_route_fallback = serializers.BooleanField(default=False)
 
     def get_metrics(self, obj) -> dict:
         return {
